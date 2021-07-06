@@ -1,0 +1,52 @@
+name: Build
+
+on:
+  push:
+    branches:
+  pull_request:
+  release:
+    types:
+      - published
+
+jobs:
+  build:
+    name: Build (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Change to x86_64-unknown-linux-musl target
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-unknown-linux-musl
+          override: true
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+
+      - name: Run self-test
+        run: |
+          target/debug/safe_ascii -t 1000 < target/debug/safe_ascii | tee stdin
+          target/debug/safe_ascii -t 1000 target/debug/safe_ascii | tee normal
+          diff stdin normal
+
+      - name: Build release
+        if: github.event_name == 'release'
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+
+      - name: Release
+        if: github.event_name == 'release'
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: target/release/safe_ascii
+          asset_name: safe_ascii-x86_64-unknown-linux-musl
+          asset_content_type: application/x-pie-executable
