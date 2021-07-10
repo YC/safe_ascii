@@ -27,11 +27,10 @@ jobs:
         with:
           command: build
 
-      - name: Run self-test
-        run: |
-          target/debug/safe_ascii -t 1000 < target/debug/safe_ascii | tee stdin
-          target/debug/safe_ascii -t 1000 target/debug/safe_ascii | tee normal
-          diff stdin normal
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
 
       - name: Build release
         if: github.event_name == 'release'

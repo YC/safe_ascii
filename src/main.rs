@@ -1,11 +1,11 @@
-use clap::{App, Arg};
+use clap::{App, Arg, Values};
 use std::fs::File;
 use std::io;
 
 fn main() {
     // Command line arguments using clap
     let matches = App::new("safe_ascii")
-        .version("1.0")
+        .version("1.0.1")
         .author("Steven Tang <steven@steventang.net>")
         .arg(
             Arg::new("mode")
@@ -13,7 +13,11 @@ fn main() {
                 .long("mode")
                 .value_name("mnemonic|escape|suppress")
                 .possible_values(&["mnemonic", "escape", "suppress"])
-                .about("'mnemonic' or \\x 'escape' sequence or 'suppress'")
+                .long_about(
+                    "mnemonic: abbreviation e.g. (NUL), (SP), (NL)
+escape: \\x sequence, e.g. \\x00 \\x20, \\x0a
+suppress: don't print non-printable characters",
+                )
                 .takes_value(true)
                 .multiple(false)
                 .default_value("mnemonic"),
@@ -35,28 +39,48 @@ fn main() {
                 .value_name("exclude characters")
                 .about(
                     "comma-delimited decimal values of characters to print
-                    (9 is HT (tab), 10 is NL (newline),
-                    13 is CR (carriage return), 32 is SP (space))",
+(9 is HT (tab), 10 is NL (newline), 13 is CR (carriage return), 32 is SP (space))",
                 )
-                .takes_value(true)
+                .multiple(false)
+                .required(false)
+                .value_delimiter(",")
                 .default_value("10,32"),
         )
         .arg(Arg::new("files").multiple(true))
         .get_matches();
 
     // Extract command line arguments
-    let mode = matches.value_of("mode").unwrap();
-    let truncate = matches.value_of("truncate").unwrap();
+    let mode = matches.value_of("mode").expect("Cannot read mode");
+    let truncate = matches.value_of("truncate").expect("Cannot read truncate");
     let mut truncate = str::parse::<i128>(truncate).expect("Cannot parse truncate");
-    let exclude = parse_exclude(matches.value_of("exclude").unwrap());
+    let exclude = parse_exclude(
+        matches
+            .values_of("exclude")
+            .map(Values::collect)
+            .unwrap_or(vec![]),
+    );
 
     // If files are given, then use files; otherwise, use stdin
     match matches.values_of("files") {
         Some(values) => {
             // files
-            for file in values {
-                let file = File::open(file).unwrap();
-                process_file(file, mode, &mut truncate, exclude);
+            for filename in values {
+                let file = File::open(filename);
+                match file {
+                    Ok(file) => {
+                        process_file(file, mode, &mut truncate, exclude);
+                    }
+                    Err(err) => {
+                        eprintln!(
+                            "{}: {}: {}",
+                            std::env::args()
+                                .next()
+                                .expect("Cannot obtain executable name"),
+                            filename,
+                            err
+                        )
+                    }
+                }
 
                 // Early return if no more chars should be printed
                 if truncate == 0 {
@@ -72,11 +96,11 @@ fn main() {
 }
 
 // Parses exclude string
-fn parse_exclude(s: &str) -> [bool; 256] {
+fn parse_exclude(s: Vec<&str>) -> [bool; 256] {
     // Initialize to false
     let mut exclude: [bool; 256] = [false; 256];
     // Split by comma, parse into int, set index of exclude array
-    for i in s.split(',') {
+    for i in s {
         if let Ok(i) = str::parse::<u8>(i) {
             exclude[i as usize] = true;
         }
@@ -172,6 +196,38 @@ fn map_to_escape(c: char) -> String {
 
 #[test]
 fn map_to_escape_test() {
+    assert_eq!(map_to_escape('\0'), "\\x00");
     assert_eq!(map_to_escape('\n'), "\\x0a");
     assert_eq!(map_to_escape('0'), "\\x30");
+}
+
+#[cfg(test)]
+mod cli {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+
+    // Compares output of stdin and file inputs
+    #[test]
+    fn stdin_file() {
+        // ./safe_ascii -t 1000 ./safe_ascii
+        let file_output = Command::new("./target/debug/safe_ascii")
+            .args(["./target/debug/safe_ascii", "-t", "1000"])
+            .output()
+            .unwrap();
+
+        // ./safe_ascii -t 1000 < ./safe_ascii
+        let file = std::fs::read("./target/debug/safe_ascii").unwrap();
+        // https://stackoverflow.com/a/49597789
+        let mut stdin_process = Command::new("./target/debug/safe_ascii")
+            .args(["-t", "1000"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let stdin = stdin_process.stdin.as_mut().unwrap();
+        stdin.write_all(&file[0..1000]).unwrap();
+        let stdin_output = stdin_process.wait_with_output().unwrap();
+
+        assert_eq!(&file_output.stdout, &stdin_output.stdout);
+    }
 }

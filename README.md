@@ -10,7 +10,8 @@ Can be used when marking programming projects, where the output may be incorrect
 
 ## Usage
 ```
-safe_ascii [OPTIONS] [files]...
+USAGE:
+    safe_ascii [OPTIONS] [files]...
 
 ARGS:
     <files>...
@@ -22,11 +23,13 @@ FLAGS:
 OPTIONS:
     -x, --exclude <exclude characters>
             comma-delimited decimal values of characters to print
-                                (9 is HT (tab), 10 is NL (newline),
-                                13 is CR (carriage return), 32 is SP (space)) [default: 10,32]
+            (9 is HT (tab), 10 is NL (newline), 13 is CR (carriage return), 32 is SP (space))
+            [default: 10,32]
 
     -m, --mode <mnemonic|escape|suppress>
-            'mnemonic' or \x 'escape' sequence or 'suppress' [default: mnemonic] [possible values:
+            mnemonic: abbreviation e.g. (NUL), (SP), (NL)
+            escape: \x sequence, e.g. \x00 \x20, \x0a
+            suppress: don't print non-printable characters[default: mnemonic] [possible values:
             mnemonic, escape, suppress]
 
     -t, --truncate <truncate length>
