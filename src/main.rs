@@ -57,7 +57,7 @@ suppress: don't print non-printable characters",
         matches
             .values_of("exclude")
             .map(Values::collect)
-            .unwrap_or(vec![]),
+            .unwrap_or_default(),
     );
 
     // If files are given, then use files; otherwise, use stdin
