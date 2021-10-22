@@ -65,6 +65,12 @@ suppress: don't print non-printable characters",
         Some(values) => {
             // files
             for filename in values {
+                // stdin
+                if filename == "-" {
+                    process_file(io::stdin(), mode, &mut truncate, exclude);
+                    continue;
+                }
+
                 let file = File::open(filename);
                 match file {
                     Ok(file) => {
