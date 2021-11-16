@@ -1,6 +1,5 @@
 use clap::{App, Arg, Values};
-use std::fs::File;
-use std::io;
+use std::{env, fs::File, io};
 
 fn main() {
     // Command line arguments using clap
@@ -79,9 +78,7 @@ suppress: don't print non-printable characters",
                     Err(err) => {
                         eprintln!(
                             "{}: {}: {}",
-                            std::env::args()
-                                .next()
-                                .expect("Cannot obtain executable name"),
+                            env::args().next().expect("Cannot obtain executable name"),
                             filename,
                             err
                         )
