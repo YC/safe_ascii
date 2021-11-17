@@ -5,7 +5,8 @@ fn main() {
     // Command line arguments using clap
     let matches = App::new("safe_ascii")
         .version("1.0.1")
-        .author("Steven Tang <steven@steventang.net>")
+        .about("A tool for sanitising ASCII files to printable characters.")
+        .author("Steven Tang <yc@steventang.net>")
         .arg(
             Arg::new("mode")
                 .short('m')
@@ -18,7 +19,7 @@ escape: \\x sequence, e.g. \\x00 \\x20, \\x0a
 suppress: don't print non-printable characters",
                 )
                 .takes_value(true)
-                .multiple(false)
+                .multiple_values(false)
                 .default_value("mnemonic"),
         )
         .arg(
@@ -28,7 +29,7 @@ suppress: don't print non-printable characters",
                 .value_name("truncate length")
                 .about("length (bytes) to truncate at, -1 means no truncation")
                 .takes_value(true)
-                .multiple(false)
+                .multiple_values(false)
                 .default_value("-1"),
         )
         .arg(
@@ -40,12 +41,12 @@ suppress: don't print non-printable characters",
                     "comma-delimited decimal values of characters to print
 (9 is HT (tab), 10 is NL (newline), 13 is CR (carriage return), 32 is SP (space))",
                 )
-                .multiple(false)
+                .multiple_values(false)
                 .required(false)
-                .value_delimiter(",")
+                .value_delimiter(',')
                 .default_value("10,32"),
         )
-        .arg(Arg::new("files").multiple(true))
+        .arg(Arg::new("files").multiple_values(true))
         .get_matches();
 
     // Extract command line arguments
