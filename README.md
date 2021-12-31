@@ -16,24 +16,27 @@ USAGE:
 ARGS:
     <files>...
 
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
 
 OPTIONS:
-    -x, --exclude <exclude characters>
-            comma-delimited decimal values of characters to print
-            (9 is HT (tab), 10 is NL (newline), 13 is CR (carriage return), 32 is SP (space))
-            [default: 10,32]
+    -h, --help
+            Print help information
 
     -m, --mode <mnemonic|escape|suppress>
             mnemonic: abbreviation e.g. (NUL), (SP), (NL)
             escape: \x sequence, e.g. \x00 \x20, \x0a
-            suppress: don't print non-printable characters[default: mnemonic] [possible values:
-            mnemonic, escape, suppress]
+            suppress: don't print non-printable characters[default: mnemonic]
+            [possible values: mnemonic, escape, suppress]
 
     -t, --truncate <truncate length>
-            length (bytes) to truncate at, -1 means no truncation [default: -1]
+            length (bytes) to truncate at, -1 means no truncation[default: -1]
+
+    -V, --version
+            Print version information
+
+    -x, --exclude <exclude characters>
+            comma-delimited decimal values of characters to print
+            (9 is HT (tab), 10 is NL (newline), 13 is CR (carriage return), 32 is SP
+            (space))[default: 10,32]
 ```
 
 ### Example

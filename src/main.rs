@@ -13,7 +13,7 @@ fn main() {
                 .long("mode")
                 .value_name("mnemonic|escape|suppress")
                 .possible_values(&["mnemonic", "escape", "suppress"])
-                .long_about(
+                .long_help(
                     "mnemonic: abbreviation e.g. (NUL), (SP), (NL)
 escape: \\x sequence, e.g. \\x00 \\x20, \\x0a
 suppress: don't print non-printable characters",
@@ -27,7 +27,7 @@ suppress: don't print non-printable characters",
                 .short('t')
                 .long("truncate")
                 .value_name("truncate length")
-                .about("length (bytes) to truncate at, -1 means no truncation")
+                .long_help("length (bytes) to truncate at, -1 means no truncation")
                 .takes_value(true)
                 .multiple_values(false)
                 .default_value("-1"),
@@ -37,7 +37,7 @@ suppress: don't print non-printable characters",
                 .short('x')
                 .long("exclude")
                 .value_name("exclude characters")
-                .about(
+                .long_help(
                     "comma-delimited decimal values of characters to print
 (9 is HT (tab), 10 is NL (newline), 13 is CR (carriage return), 32 is SP (space))",
                 )
