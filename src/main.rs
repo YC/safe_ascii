@@ -1,9 +1,9 @@
-use clap::{App, Arg, Values};
+use clap::{Arg, Values, Command};
 use std::{env, fs::File, io};
 
 fn main() {
     // Command line arguments using clap
-    let matches = App::new("safe_ascii")
+    let matches = Command::new("safe_ascii")
         .version("1.0.1")
         .about("A tool for sanitising ASCII files to printable characters.")
         .author("Steven Tang <yc@steventang.net>")
