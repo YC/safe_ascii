@@ -4,7 +4,7 @@ use std::{env, fs::File, io};
 fn main() {
     // Command line arguments using clap
     let matches = Command::new("safe_ascii")
-        .version("1.0.1")
+        .version("1.0.4")
         .about("A tool for sanitising ASCII files to printable characters.")
         .author("Steven Tang <yc@steventang.net>")
         .arg(

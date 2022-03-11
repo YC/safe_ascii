@@ -1,6 +1,6 @@
 [package]
 name = "safe_ascii"
-version = "1.0.1"
+version = "1.0.4"
 edition = "2018"
 
 [dependencies]
@@ -12,3 +12,4 @@ debug = false
 lto = true
 panic = 'unwind'
 codegen-units = 1
+strip = true
