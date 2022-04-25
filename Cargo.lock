@@ -59,7 +59,7 @@ dependencies = [
 
 [[package]]
 name = "safe_ascii"
-version = "1.0.1"
+version = "1.0.5"
 dependencies = [
  "clap",
 ]

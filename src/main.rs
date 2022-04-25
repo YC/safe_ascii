@@ -4,7 +4,7 @@ use std::{env, fs::File, io::{self, BufReader}};
 fn main() {
     // Command line arguments using clap
     let matches = Command::new("safe_ascii")
-        .version("1.0.4")
+        .version("1.0.5")
         .about("A tool for sanitising ASCII files to printable characters.")
         .author("Steven Tang <yc@steventang.net>")
         .arg(
@@ -124,10 +124,10 @@ fn process_file<R: io::Read>(f: R, mode: &str, truncate: &mut i128, exclude: [bo
                 } else {
                     match mode {
                         "mnemonic" => {
-                            print!("{}", map_to_mnemonic(c as char));
+                            print!("{}", map_to_mnemonic(c));
                         }
                         "escape" => {
-                            print!("{}", map_to_escape(c as char));
+                            print!("{}", map_to_escape(c));
                         }
                         _ => (),
                     }
@@ -147,8 +147,8 @@ fn process_file<R: io::Read>(f: R, mode: &str, truncate: &mut i128, exclude: [bo
 }
 
 // Map to mnemonic form
-fn map_to_mnemonic(c: char) -> &'static str {
-    match c as u8 {
+fn map_to_mnemonic(c: u8) -> &'static str {
+    match c {
         0 => "(NUL)",
         1 => "(SOH)",
         2 => "(STX)",
@@ -190,20 +190,20 @@ fn map_to_mnemonic(c: char) -> &'static str {
 
 #[test]
 fn map_to_mnemonic_test() {
-    assert_eq!(map_to_mnemonic('\n'), "(LF)");
-    assert_eq!(map_to_mnemonic('\0'), "(NUL)");
+    assert_eq!(map_to_mnemonic('\n' as u8), "(LF)");
+    assert_eq!(map_to_mnemonic('\0' as u8), "(NUL)");
 }
 
 // Map to escape sequence form
-fn map_to_escape(c: char) -> String {
-    return format!("\\x{:02x}", c as u8);
+fn map_to_escape(c: u8) -> String {
+    return format!("\\x{:02x}", c);
 }
 
 #[test]
 fn map_to_escape_test() {
-    assert_eq!(map_to_escape('\0'), "\\x00");
-    assert_eq!(map_to_escape('\n'), "\\x0a");
-    assert_eq!(map_to_escape('0'), "\\x30");
+    assert_eq!(map_to_escape('\0' as u8), "\\x00");
+    assert_eq!(map_to_escape('\n' as u8), "\\x0a");
+    assert_eq!(map_to_escape('0' as u8), "\\x30");
 }
 
 #[cfg(test)]
