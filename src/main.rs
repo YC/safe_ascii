@@ -1,5 +1,5 @@
 use clap::{Arg, Values, Command};
-use std::{env, fs::File, io};
+use std::{env, fs::File, io::{self, BufReader}};
 
 fn main() {
     // Command line arguments using clap
@@ -74,7 +74,8 @@ suppress: don't print non-printable characters",
                 let file = File::open(filename);
                 match file {
                     Ok(file) => {
-                        process_file(file, mode, &mut truncate, exclude);
+                        let reader = BufReader::new(file);
+                        process_file(reader, mode, &mut truncate, exclude);
                     }
                     Err(err) => {
                         eprintln!(
