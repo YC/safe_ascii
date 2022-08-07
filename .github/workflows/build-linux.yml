@@ -12,14 +12,17 @@ jobs:
   build:
     name: Build (Linux)
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: ["x86_64-unknown-linux-musl", "aarch64-unknown-linux-gnu"]
     steps:
       - uses: actions/checkout@master
 
-      - name: Change to x86_64-unknown-linux-musl target
+      - name: Change to ${{ matrix.target}} target
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: x86_64-unknown-linux-musl
+          target: ${{ matrix.target}}
           override: true
 
       - name: Build
@@ -47,5 +50,5 @@ jobs:
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: target/release/safe-ascii
-          asset_name: safe-ascii-x86_64-unknown-linux-musl
+          asset_name: safe-ascii-${{ matrix.target}}
           asset_content_type: application/x-pie-executable
