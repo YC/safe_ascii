@@ -1,5 +1,5 @@
 use clap::{Arg, Command, Values};
-use safe_ascii::{map_to_escape, map_to_mnemonic};
+use safe_ascii::{generate_mapping, map_to_escape, map_to_mnemonic};
 use std::{
     env,
     fs::File,
@@ -105,37 +105,22 @@ suppress: don't print non-printable characters",
     }
 }
 
-// Parses exclude string
-fn parse_exclude(s: Vec<&str>) -> [bool; 256] {
-    // Initialize to false
-    let mut exclude: [bool; 256] = [false; 256];
-    // Split by comma, parse into int, set index of exclude array
-    for i in s {
-        if let Ok(i) = str::parse::<u8>(i) {
-            exclude[i as usize] = true;
-        }
-    }
-    exclude
-}
-
 // Process files with Read trait
-fn process_file<R: io::Read>(f: R, mode: &str, truncate: &mut i128, exclude: [bool; 256]) {
+fn process_file<R: io::Read>(f: R, mode: &str, truncate: &mut i128, exclusion_list: [bool; 256]) {
+    let map_fn = match mode {
+        "mnemonic" => map_to_mnemonic,
+        "escape" => map_to_escape,
+        _ => |_| "".to_string(),
+    };
+    let mapping = generate_mapping(&map_fn, exclusion_list);
+
     for b in f.bytes() {
         match b {
             Ok(c) => {
-                // Printable or excluded
-                if (33..=126).contains(&c) || exclude[c as usize] {
-                    print!("{}", c as char)
+                if (33..=126).contains(&c) {
+                    print!("{}", c as char);
                 } else {
-                    match mode {
-                        "mnemonic" => {
-                            print!("{}", map_to_mnemonic(c));
-                        }
-                        "escape" => {
-                            print!("{}", map_to_escape(c));
-                        }
-                        _ => (),
-                    }
+                    print!("{}", mapping.convert_u8(c));
                 }
 
                 // Reduce truncate
@@ -149,6 +134,19 @@ fn process_file<R: io::Read>(f: R, mode: &str, truncate: &mut i128, exclude: [bo
             _ => break,
         }
     }
+}
+
+// Parses exclude string
+fn parse_exclude(s: Vec<&str>) -> [bool; 256] {
+    // Initialize to false
+    let mut exclude: [bool; 256] = [false; 256];
+    // Split by comma, parse into int, set index of exclude array
+    for i in s {
+        if let Ok(i) = str::parse::<u8>(i) {
+            exclude[i as usize] = true;
+        }
+    }
+    exclude
 }
 
 #[cfg(test)]

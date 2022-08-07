@@ -1,5 +1,62 @@
 #![crate_name = "safe_ascii"]
 
+use std::convert::TryInto;
+
+/// Type for storing precomputed mapping between u8 to String.
+/// (Subject to change)
+pub struct AsciiMapping {
+    mapping: [String; 256],
+}
+
+impl AsciiMapping {
+    pub fn convert_u8(&self, input: u8) -> &str {
+        &self.mapping[input as usize]
+    }
+
+    pub fn convert_u8_array(&self, input: Vec<u8>) -> String {
+        input
+            .iter()
+            .map(|c| self.mapping[*c as usize].as_ref())
+            .collect::<Vec<&str>>()
+            .join("")
+    }
+}
+
+/// Generates a mapping table from u8 to string.
+pub fn generate_mapping(
+    map_fn: &dyn Fn(u8) -> String,
+    exclusion_list: [bool; 256],
+) -> AsciiMapping {
+    let mut result: Vec<String> = vec![];
+
+    for i in 0u8..=255 {
+        if exclusion_list[i as usize] {
+            result.push((i as char).to_string());
+        } else {
+            result.push(map_fn(i));
+        }
+    }
+
+    AsciiMapping {
+        mapping: result.try_into().unwrap(),
+    }
+}
+
+#[test]
+fn test_generate_mapping() {
+    // Exclusion list with all but first excluded
+    let mut exclusion_list: Vec<bool> = vec![];
+    for _ in 0u8..=255 {
+        exclusion_list.push(true);
+    }
+    exclusion_list[1] = false;
+
+    let mapping = generate_mapping(&map_to_mnemonic, exclusion_list.try_into().unwrap());
+    assert_eq!(mapping.mapping[0], "\0");
+    assert_eq!(mapping.mapping[1], "(SOH)");
+    assert_eq!(mapping.mapping[48], "0");
+}
+
 /// Returns a char's mnemonic representation.
 ///
 /// * ASCII characters in range 0x21 to 0x7e are not escaped.
