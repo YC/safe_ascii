@@ -1,10 +1,22 @@
 [package]
-name = "safe_ascii"
-version = "1.0.5"
+name = "safe-ascii"
+version = "1.1.0"
 edition = "2018"
+homepage = "https://github.com/YC/safe_ascii"
+repository = "https://github.com/YC/safe_ascii"
+license = "MIT"
+readme = "README.md"
 
 [dependencies]
 clap = { version = "3.2.16", default-features = false, features=["std"] }
+
+[lib]
+name = "safe_ascii"
+crate-type = ["lib"]
+
+[[bin]]
+name = "safe-ascii"
+test = true
 
 [profile.release]
 opt-level = 3

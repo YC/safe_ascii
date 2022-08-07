@@ -11,7 +11,7 @@ Can be used when marking programming projects, where the output may be incorrect
 ## Usage
 ```
 USAGE:
-    safe_ascii [OPTIONS] [files]...
+    safe-ascii [OPTIONS] [files]...
 
 ARGS:
     <files>...
@@ -42,7 +42,7 @@ OPTIONS:
 ### Example
 
 ```
-$ safe_ascii -x 10 Cargo.toml
+$ safe-ascii -x 10 Cargo.toml
 [package]
 name(SP)=(SP)"safe_ascii"
 version(SP)=(SP)"1.0.0"

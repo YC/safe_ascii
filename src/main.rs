@@ -1,9 +1,10 @@
+use safe_ascii::{map_to_escape, map_to_mnemonic};
 use clap::{Arg, Values, Command};
 use std::{env, fs::File, io::{self, BufReader}};
 
 fn main() {
     // Command line arguments using clap
-    let matches = Command::new("safe_ascii")
+    let matches = Command::new("safe-ascii")
         .version("1.0.5")
         .about("A tool for sanitising ASCII files to printable characters.")
         .author("Steven Tang <yc@steventang.net>")
@@ -146,66 +147,6 @@ fn process_file<R: io::Read>(f: R, mode: &str, truncate: &mut i128, exclude: [bo
     }
 }
 
-// Map to mnemonic form
-fn map_to_mnemonic(c: u8) -> &'static str {
-    match c {
-        0 => "(NUL)",
-        1 => "(SOH)",
-        2 => "(STX)",
-        3 => "(ETX)",
-        4 => "(EOT)",
-        5 => "(ENQ)",
-        6 => "(ACK)",
-        7 => "(BEL)",
-        8 => "(BS)",
-        9 => "(HT)",
-        10 => "(LF)",
-        11 => "(VT)",
-        12 => "(FF)",
-        13 => "(CR)",
-        14 => "(SO)",
-        15 => "(SI)",
-        16 => "(DLE)",
-        17 => "(DC1)",
-        18 => "(DC2)",
-        19 => "(DC3)",
-        20 => "(DC4)",
-        21 => "(NAK)",
-        22 => "(SYN)",
-        23 => "(ETB)",
-        24 => "(CAN)",
-        25 => "(EM)",
-        26 => "(SUB)",
-        27 => "(ESC)",
-        28 => "(FS)",
-        29 => "(GS)",
-        30 => "(RS)",
-        31 => "(US)",
-        32 => "(SP)",
-        33..=126 => "", // Printable
-        127 => "(DEL)",
-        128..=255 => "(>7F)",
-    }
-}
-
-#[test]
-fn map_to_mnemonic_test() {
-    assert_eq!(map_to_mnemonic('\n' as u8), "(LF)");
-    assert_eq!(map_to_mnemonic('\0' as u8), "(NUL)");
-}
-
-// Map to escape sequence form
-fn map_to_escape(c: u8) -> String {
-    return format!("\\x{:02x}", c);
-}
-
-#[test]
-fn map_to_escape_test() {
-    assert_eq!(map_to_escape('\0' as u8), "\\x00");
-    assert_eq!(map_to_escape('\n' as u8), "\\x0a");
-    assert_eq!(map_to_escape('0' as u8), "\\x30");
-}
-
 #[cfg(test)]
 mod cli {
     use std::io::Write;
@@ -214,16 +155,16 @@ mod cli {
     // Compares output of stdin and file inputs
     #[test]
     fn stdin_file() {
-        // ./safe_ascii -t 1000 ./safe_ascii
-        let file_output = Command::new("./target/debug/safe_ascii")
-            .args(["./target/debug/safe_ascii", "-t", "1000"])
+        // ./safe-ascii -t 1000 ./safe-ascii
+        let file_output = Command::new("./target/debug/safe-ascii")
+            .args(["./target/debug/safe-ascii", "-t", "1000"])
             .output()
             .unwrap();
 
-        // ./safe_ascii -t 1000 < ./safe_ascii
-        let file = std::fs::read("./target/debug/safe_ascii").unwrap();
+        // ./safe-ascii -t 1000 < ./safe-ascii
+        let file = std::fs::read("./target/debug/safe-ascii").unwrap();
         // https://stackoverflow.com/a/49597789
-        let mut stdin_process = Command::new("./target/debug/safe_ascii")
+        let mut stdin_process = Command::new("./target/debug/safe-ascii")
             .args(["-t", "1000"])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

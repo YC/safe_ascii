@@ -46,6 +46,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: target/release/safe_ascii
-          asset_name: safe_ascii-x86_64-unknown-linux-musl
+          asset_path: target/release/safe-ascii
+          asset_name: safe-ascii-x86_64-unknown-linux-musl
           asset_content_type: application/x-pie-executable
