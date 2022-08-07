@@ -1,11 +1,15 @@
+use clap::{Arg, Command, Values};
 use safe_ascii::{map_to_escape, map_to_mnemonic};
-use clap::{Arg, Values, Command};
-use std::{env, fs::File, io::{self, BufReader}};
+use std::{
+    env,
+    fs::File,
+    io::{self, BufReader},
+};
 
 fn main() {
     // Command line arguments using clap
     let matches = Command::new("safe-ascii")
-        .version("1.0.5")
+        .version("1.1.0")
         .about("A tool for sanitising ASCII files to printable characters.")
         .author("Steven Tang <yc@steventang.net>")
         .arg(

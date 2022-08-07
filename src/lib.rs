@@ -16,7 +16,7 @@
 /// assert_eq!(safe_ascii::map_to_mnemonic('~' as u8), "~");
 /// ```
 pub fn map_to_mnemonic(c: u8) -> String {
-    return match c {
+    match c {
         0 => "(NUL)".to_owned(),
         1 => "(SOH)".to_owned(),
         2 => "(STX)".to_owned(),
@@ -78,12 +78,12 @@ pub fn map_to_escape(c: u8) -> String {
     // Note: some escape codes are not covered
     // https://github.com/rust-lang/rfcs/pull/1437
 
-    return match c {
+    match c {
         0 => "\\0".to_owned(),
         9 => "\\t".to_owned(),
         10 => "\\n".to_owned(),
         13 => "\\r".to_owned(),
         32..=126 => (c as char).to_string(), // Printable
         _ => format!("\\x{:02x}", c),
-    };
+    }
 }
