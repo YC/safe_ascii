@@ -1,5 +1,5 @@
 use clap::{Arg, Command, Values};
-use safe_ascii::{generate_mapping, map_to_escape, map_to_mnemonic};
+use safe_ascii::{map_to_escape, map_to_mnemonic, AsciiMapping};
 use std::{
     env,
     fs::File,
@@ -112,7 +112,7 @@ fn process_file<R: io::Read>(f: R, mode: &str, truncate: &mut i128, exclusion_li
         "escape" => map_to_escape,
         _ => |_| "".to_string(),
     };
-    let mapping = generate_mapping(&map_fn, exclusion_list);
+    let mapping = AsciiMapping::new(&map_fn, exclusion_list);
 
     for b in f.bytes() {
         match b {

@@ -9,36 +9,55 @@ pub struct AsciiMapping {
 }
 
 impl AsciiMapping {
+    /// Generates a mapping table from u8 to string.
+    ///
+    /// ```
+    /// use safe_ascii::AsciiMapping;
+    /// let mut exclude: [bool; 256] = [false; 256];
+    /// let _ = AsciiMapping::new(&safe_ascii::map_to_mnemonic, exclude);
+    /// ```
+    pub fn new(map_fn: &dyn Fn(u8) -> String, exclusion_list: [bool; 256]) -> Self {
+        let mut result: Vec<String> = vec![];
+
+        for i in 0u8..=255 {
+            if exclusion_list[i as usize] {
+                result.push((i as char).to_string());
+            } else {
+                result.push(map_fn(i));
+            }
+        }
+
+        AsciiMapping {
+            mapping: result.try_into().unwrap(),
+        }
+    }
+
+    /// Convert a u8 according to the mapping.
+    ///
+    /// ```
+    /// use safe_ascii::AsciiMapping;
+    /// let mut exclude: [bool; 256] = [false; 256];
+    /// let mapping = AsciiMapping::new(&safe_ascii::map_to_mnemonic, exclude);
+    /// assert_eq!(mapping.convert_u8(0), "(NUL)");
+    /// ```
     pub fn convert_u8(&self, input: u8) -> &str {
         &self.mapping[input as usize]
     }
 
-    pub fn convert_u8_array(&self, input: Vec<u8>) -> String {
+    /// Convert a u8 according to the mapping.
+    ///
+    /// ```
+    /// use safe_ascii::AsciiMapping;
+    /// let mut exclude: [bool; 256] = [false; 256];
+    /// let mapping = AsciiMapping::new(&safe_ascii::map_to_mnemonic, exclude);
+    /// assert_eq!(mapping.convert_u8_slice(&['h' as u8, ' ' as u8, 'i' as u8]), "h(SP)i");
+    /// ```
+    pub fn convert_u8_slice(&self, input: &[u8]) -> String {
         input
             .iter()
             .map(|c| self.mapping[*c as usize].as_ref())
             .collect::<Vec<&str>>()
             .join("")
-    }
-}
-
-/// Generates a mapping table from u8 to string.
-pub fn generate_mapping(
-    map_fn: &dyn Fn(u8) -> String,
-    exclusion_list: [bool; 256],
-) -> AsciiMapping {
-    let mut result: Vec<String> = vec![];
-
-    for i in 0u8..=255 {
-        if exclusion_list[i as usize] {
-            result.push((i as char).to_string());
-        } else {
-            result.push(map_fn(i));
-        }
-    }
-
-    AsciiMapping {
-        mapping: result.try_into().unwrap(),
     }
 }
 
@@ -51,7 +70,7 @@ fn test_generate_mapping() {
     }
     exclusion_list[1] = false;
 
-    let mapping = generate_mapping(&map_to_mnemonic, exclusion_list.try_into().unwrap());
+    let mapping = AsciiMapping::new(&map_to_mnemonic, exclusion_list.try_into().unwrap());
     assert_eq!(mapping.mapping[0], "\0");
     assert_eq!(mapping.mapping[1], "(SOH)");
     assert_eq!(mapping.mapping[48], "0");
