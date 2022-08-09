@@ -3,7 +3,7 @@ use safe_ascii::{map_to_escape, map_to_mnemonic, AsciiMapping};
 use std::{
     env,
     fs::File,
-    io::{self, BufReader},
+    io::{self, BufReader, Write},
 };
 
 fn main() {
@@ -114,13 +114,16 @@ fn process_file<R: io::Read>(f: R, mode: &str, truncate: &mut i128, exclusion_li
     };
     let mapping = AsciiMapping::new(&map_fn, exclusion_list);
 
+    let stdout = io::stdout();
+    let mut handle = stdout.lock();
+
     for b in f.bytes() {
         match b {
             Ok(c) => {
                 if (33..=126).contains(&c) {
-                    print!("{}", c as char);
+                    handle.write(&[c]).unwrap();
                 } else {
-                    print!("{}", mapping.convert_u8(c));
+                    handle.write_all(mapping.convert_u8(c).as_bytes()).unwrap();
                 }
 
                 // Reduce truncate
