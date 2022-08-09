@@ -128,32 +128,19 @@ pub fn map_to_mnemonic(c: u8) -> String {
 
 /// Returns a char's escape sequence representation.
 ///
-/// * ASCII characters in range 0x20 to 0x7e are not escaped.
-///
 /// # Examples
 ///
 /// ```
 /// use safe_ascii;
 ///
-/// assert_eq!(safe_ascii::map_to_escape('\0' as u8), "\\0");
-/// assert_eq!(safe_ascii::map_to_escape('\t' as u8), "\\t");
-/// assert_eq!(safe_ascii::map_to_escape('\n' as u8), "\\n");
-/// assert_eq!(safe_ascii::map_to_escape('\r' as u8), "\\r");
-/// assert_eq!(safe_ascii::map_to_escape('0' as u8), "0");
-/// assert_eq!(safe_ascii::map_to_escape('a' as u8), "a");
-/// assert_eq!(safe_ascii::map_to_escape('~' as u8), "~");
+/// assert_eq!(safe_ascii::map_to_escape('\0' as u8), "\\x00");
+/// assert_eq!(safe_ascii::map_to_escape('\t' as u8), "\\x09");
+/// assert_eq!(safe_ascii::map_to_escape('\n' as u8), "\\x0a");
+/// assert_eq!(safe_ascii::map_to_escape('\r' as u8), "\\x0d");
+/// assert_eq!(safe_ascii::map_to_escape('0' as u8), "\\x30");
+/// assert_eq!(safe_ascii::map_to_escape('~' as u8), "\\x7e");
 /// ```
 // Map to escape sequence form
 pub fn map_to_escape(c: u8) -> String {
-    // Note: some escape codes are not covered
-    // https://github.com/rust-lang/rfcs/pull/1437
-
-    match c {
-        0 => "\\0".to_owned(),
-        9 => "\\t".to_owned(),
-        10 => "\\n".to_owned(),
-        13 => "\\r".to_owned(),
-        32..=126 => (c as char).to_string(), // Printable
-        _ => format!("\\x{:02x}", c),
-    }
+    format!("\\x{:02x}", c)
 }
