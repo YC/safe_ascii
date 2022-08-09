@@ -7,7 +7,6 @@ use std::{
 };
 
 fn main() -> Result<(), std::io::Error> {
-    // Command line arguments using clap
     let matches = Command::new("safe-ascii")
         .version("1.1.0")
         .about("A tool for sanitising ASCII files to printable characters.")
@@ -20,7 +19,7 @@ fn main() -> Result<(), std::io::Error> {
                 .possible_values(&["mnemonic", "escape", "suppress"])
                 .long_help(
                     "mnemonic: abbreviation e.g. (NUL), (SP), (NL)
-escape: \\x sequence, e.g. \\x00 \\x20, \\x0a
+escape: \\x sequence, e.g. \\x00, \\x20, \\x0a
 suppress: don't print non-printable characters",
                 )
                 .takes_value(true)
@@ -76,25 +75,23 @@ suppress: don't print non-printable characters",
     if let Some(values) = matches.values_of("files") {
         // files
         for filename in values {
-            // stdin
             if filename == "-" {
-                process_file(io::stdin(), &mapping, &mut truncate)?;
-                continue;
-            }
-
-            let file = File::open(filename);
-            match file {
-                Ok(file) => {
-                    let reader = BufReader::new(file);
-                    process_file(reader, &mapping, &mut truncate)?;
-                }
-                Err(err) => {
-                    eprintln!(
-                        "{}: {}: {}",
-                        env::args().next().expect("Cannot obtain executable name"),
-                        filename,
-                        err
-                    )
+                try_process_file(io::stdin(), &mapping, &mut truncate)?;
+            } else {
+                let file = File::open(filename);
+                match file {
+                    Ok(file) => {
+                        let buf_reader = BufReader::new(file);
+                        try_process_file(buf_reader, &mapping, &mut truncate)?
+                    }
+                    Err(err) => {
+                        eprintln!(
+                            "{}: {}: {}",
+                            env::args().next().expect("Cannot obtain executable name"),
+                            filename,
+                            err
+                        );
+                    }
                 }
             }
 
@@ -104,23 +101,37 @@ suppress: don't print non-printable characters",
             }
         }
     } else {
-        process_file(io::stdin(), &mapping, &mut truncate)?;
+        try_process_file(std::io::stdin(), &mapping, &mut truncate)?
     }
 
     Ok(())
 }
 
+fn try_process_file<R: io::Read>(
+    reader: R,
+    mapping: &AsciiMapping,
+    truncate: &mut i128,
+) -> Result<(), std::io::Error> {
+    if let Err(e) = process_file(reader, mapping, truncate) {
+        if e.kind() == std::io::ErrorKind::BrokenPipe {
+            std::process::exit(141);
+        }
+        Err(e)?
+    };
+    Ok(())
+}
+
 // Process files with Read trait
 fn process_file<R: io::Read>(
-    f: R,
+    reader: R,
     mapping: &AsciiMapping,
     truncate: &mut i128,
 ) -> Result<(), std::io::Error> {
     let stdout = io::stdout();
     let mut handle = stdout.lock();
 
-    for b in f.bytes() {
-        match b {
+    for byte in reader.bytes() {
+        match byte {
             Ok(c) => {
                 if (33..=126).contains(&c) {
                     handle.write_all(&[c])?;

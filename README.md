@@ -23,7 +23,7 @@ OPTIONS:
 
     -m, --mode <mnemonic|escape|suppress>
             mnemonic: abbreviation e.g. (NUL), (SP), (NL)
-            escape: \x sequence, e.g. \x00 \x20, \x0a
+            escape: \x sequence, e.g. \x00, \x20, \x0a
             suppress: don't print non-printable characters[default: mnemonic]
             [possible values: mnemonic, escape, suppress]
 
