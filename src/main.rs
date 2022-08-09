@@ -6,7 +6,7 @@ use std::{
     io::{self, BufReader, Write},
 };
 
-fn main() {
+fn main() -> Result<(), std::io::Error> {
     // Command line arguments using clap
     let matches = Command::new("safe-ascii")
         .version("1.1.0")
@@ -65,55 +65,57 @@ suppress: don't print non-printable characters",
             .unwrap_or_default(),
     );
 
-    // If files are given, then use files; otherwise, use stdin
-    match matches.values_of("files") {
-        Some(values) => {
-            // files
-            for filename in values {
-                // stdin
-                if filename == "-" {
-                    process_file(io::stdin(), mode, &mut truncate, exclude);
-                    continue;
-                }
-
-                let file = File::open(filename);
-                match file {
-                    Ok(file) => {
-                        let reader = BufReader::new(file);
-                        process_file(reader, mode, &mut truncate, exclude);
-                    }
-                    Err(err) => {
-                        eprintln!(
-                            "{}: {}: {}",
-                            env::args().next().expect("Cannot obtain executable name"),
-                            filename,
-                            err
-                        )
-                    }
-                }
-
-                // Early return if no more chars should be printed
-                if truncate == 0 {
-                    break;
-                }
-            }
-        }
-        None => {
-            // stdin
-            process_file(io::stdin(), mode, &mut truncate, exclude);
-        }
-    }
-}
-
-// Process files with Read trait
-fn process_file<R: io::Read>(f: R, mode: &str, truncate: &mut i128, exclusion_list: [bool; 256]) {
     let map_fn = match mode {
         "mnemonic" => map_to_mnemonic,
         "escape" => map_to_escape,
         _ => |_| "".to_string(),
     };
-    let mapping = AsciiMapping::new(&map_fn, exclusion_list);
+    let mapping = AsciiMapping::new(&map_fn, exclude);
 
+    // If files are given, then use files; otherwise, use stdin
+    if let Some(values) = matches.values_of("files") {
+        // files
+        for filename in values {
+            // stdin
+            if filename == "-" {
+                process_file(io::stdin(), &mapping, &mut truncate)?;
+                continue;
+            }
+
+            let file = File::open(filename);
+            match file {
+                Ok(file) => {
+                    let reader = BufReader::new(file);
+                    process_file(reader, &mapping, &mut truncate)?;
+                }
+                Err(err) => {
+                    eprintln!(
+                        "{}: {}: {}",
+                        env::args().next().expect("Cannot obtain executable name"),
+                        filename,
+                        err
+                    )
+                }
+            }
+
+            // Early return if no more chars should be printed
+            if truncate == 0 {
+                break;
+            }
+        }
+    } else {
+        process_file(io::stdin(), &mapping, &mut truncate)?;
+    }
+
+    Ok(())
+}
+
+// Process files with Read trait
+fn process_file<R: io::Read>(
+    f: R,
+    mapping: &AsciiMapping,
+    truncate: &mut i128,
+) -> Result<(), std::io::Error> {
     let stdout = io::stdout();
     let mut handle = stdout.lock();
 
@@ -121,9 +123,9 @@ fn process_file<R: io::Read>(f: R, mode: &str, truncate: &mut i128, exclusion_li
         match b {
             Ok(c) => {
                 if (33..=126).contains(&c) {
-                    handle.write(&[c]).unwrap();
+                    handle.write_all(&[c])?;
                 } else {
-                    handle.write_all(mapping.convert_u8(c).as_bytes()).unwrap();
+                    handle.write_all(mapping.convert_u8(c).as_bytes())?;
                 }
 
                 // Reduce truncate
@@ -137,6 +139,7 @@ fn process_file<R: io::Read>(f: R, mode: &str, truncate: &mut i128, exclusion_li
             _ => break,
         }
     }
+    Ok(())
 }
 
 // Parses exclude string
