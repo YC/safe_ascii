@@ -1,7 +1,5 @@
 #![crate_name = "safe_ascii"]
 
-use std::convert::TryInto;
-
 /// Type for storing precomputed mapping between u8 to String.
 /// (Subject to change)
 pub struct AsciiMapping {
@@ -17,19 +15,18 @@ impl AsciiMapping {
     /// let _ = AsciiMapping::new(&safe_ascii::map_to_mnemonic, exclude);
     /// ```
     pub fn new(map_fn: &dyn Fn(u8) -> String, exclusion_list: [bool; 256]) -> Self {
-        let mut result: Vec<String> = vec![];
+        // https://stackoverflow.com/questions/28656387
+        let mut result: [String; 256] = [(); 256].map(|_| String::default());
 
         for i in 0u8..=255 {
             if exclusion_list[i as usize] {
-                result.push((i as char).to_string());
+                result[i as usize] = (i as char).to_string();
             } else {
-                result.push(map_fn(i));
+                result[i as usize] = map_fn(i);
             }
         }
 
-        AsciiMapping {
-            mapping: result.try_into().unwrap(),
-        }
+        AsciiMapping { mapping: result }
     }
 
     /// Convert a u8 according to the mapping.
@@ -64,13 +61,10 @@ impl AsciiMapping {
 #[test]
 fn test_generate_mapping() {
     // Exclusion list with all but first excluded
-    let mut exclusion_list: Vec<bool> = vec![];
-    for _ in 0u8..=255 {
-        exclusion_list.push(true);
-    }
+    let mut exclusion_list: [bool; 256] = [true; 256];
     exclusion_list[1] = false;
 
-    let mapping = AsciiMapping::new(&map_to_mnemonic, exclusion_list.try_into().unwrap());
+    let mapping = AsciiMapping::new(&map_to_mnemonic, exclusion_list);
     assert_eq!(mapping.mapping[0], "\0");
     assert_eq!(mapping.mapping[1], "(SOH)");
     assert_eq!(mapping.mapping[48], "0");
