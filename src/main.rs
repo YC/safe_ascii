@@ -174,16 +174,21 @@ mod cli {
     // Compares output of stdin and file inputs
     #[test]
     fn stdin_file() {
+        // Adapted from cargo-script
+        let target_dir =
+            std::env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| String::from("target"));
+        let program_path = format!("{}/debug/safe-ascii", target_dir);
+
         // ./safe-ascii -t 1000 ./safe-ascii
-        let file_output = Command::new("./target/debug/safe-ascii")
-            .args(["./target/debug/safe-ascii", "-t", "1000"])
+        let file_output = Command::new(&program_path)
+            .args([program_path.as_str(), "-t", "1000"])
             .output()
             .unwrap();
 
         // ./safe-ascii -t 1000 < ./safe-ascii
-        let file = std::fs::read("./target/debug/safe-ascii").unwrap();
+        let file = std::fs::read(&program_path).unwrap();
         // https://stackoverflow.com/a/49597789
-        let mut stdin_process = Command::new("./target/debug/safe-ascii")
+        let mut stdin_process = Command::new(&program_path)
             .args(["-t", "1000"])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

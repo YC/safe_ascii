@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    tags:
+  release:
+    types:
+      - published
+
+jobs:
+  release:
+    name: Release (Linux)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch:
+          - { target: "x86_64-unknown-linux-musl", cross: false }
+          - { target: "x86_64-unknown-linux-gnu", cross: false }
+          - { target: "aarch64-unknown-linux-musl", cross: true }
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Change to ${{ matrix.arch.target }} target
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          target: ${{ matrix.arch.target }}
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+
+      - name: Build release
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target ${{ matrix.arch.target }}
+          use-cross: ${{ matrix.arch.cross }}
+
+      - name: Release
+        if: github.event_name == 'release'
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: target/${{ matrix.arch.target }}/release/safe-ascii
+          asset_name: safe-ascii-${{ matrix.arch.target }}
+          asset_content_type: application/x-pie-executable
