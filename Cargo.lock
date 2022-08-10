@@ -59,7 +59,7 @@ checksum = "648001efe5d5c0102d8cea768e348da85d90af8ba91f0bea908f157951493cd4"
 
 [[package]]
 name = "safe-ascii"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "clap",
 ]

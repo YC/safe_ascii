@@ -8,7 +8,7 @@ use std::{
 
 fn main() -> Result<(), std::io::Error> {
     let matches = Command::new("safe-ascii")
-        .version("1.1.0")
+        .version("1.1.1")
         .about("A tool for sanitising ASCII files to printable characters.")
         .author("Steven Tang <yc@steventang.net>")
         .arg(
