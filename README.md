@@ -3,11 +3,6 @@ A tool for sanitising files to printable ASCII characters.
 
 Can be used when marking programming projects, where the output may be incorrect and it may be ideal to avoid non-printable characters (e.g. to avoid file being detected as binary when using `grep`).
 
-## Features
-- stdin
-- Substitution of non-printable characters, with modes: mnemonic (e.g. (NUL)), escape sequence (e.g. \x0), or suppress
-- Truncation
-
 ## Usage
 ```
 USAGE:
