@@ -173,21 +173,25 @@ mod cli {
     use std::io::Write;
     use std::process::{Command, Stdio};
 
-    // Compares output of stdin and file inputs
-    #[test]
-    fn stdin_file() {
+    fn get_program_path() -> String {
         // Adapted from cargo-script
         let target_dir =
             std::env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| String::from("target"));
-        let program_path = format!("{}/debug/safe-ascii", target_dir);
+        format!("{}/debug/safe-ascii", target_dir)
+    }
 
-        // ./safe-ascii -t 1000 ./safe-ascii
+    // Compares output of stdin and file inputs
+    #[test]
+    fn stdin_direct() {
+        let program_path = get_program_path();
+
+        // safe-ascii -t 1000 ./safe-ascii
         let file_output = Command::new(&program_path)
             .args([program_path.as_str(), "-t", "1000"])
             .output()
             .unwrap();
 
-        // ./safe-ascii -t 1000 < ./safe-ascii
+        // safe-ascii -t 1000 < ./safe-ascii
         let file = std::fs::read(&program_path).unwrap();
         // https://stackoverflow.com/a/49597789
         let mut stdin_process = Command::new(&program_path)
@@ -201,5 +205,97 @@ mod cli {
         let stdin_output = stdin_process.wait_with_output().unwrap();
 
         assert_eq!(&file_output.stdout, &stdin_output.stdout);
+    }
+
+    #[test]
+    fn files_many() {
+        let program_path = get_program_path();
+
+        let file_output = Command::new(&program_path)
+            .args(["Cargo.toml"])
+            .output()
+            .unwrap();
+
+        let file_output_double = Command::new(&program_path)
+            .args(["Cargo.toml", "Cargo.toml", "Cargo.toml"])
+            .output()
+            .unwrap();
+
+        assert_eq!(
+            file_output.stdout.len() * 3,
+            file_output_double.stdout.len()
+        );
+    }
+
+    #[test]
+    fn truncation() {
+        let program_path = get_program_path();
+
+        let mut stdin_process = Command::new(&program_path)
+            .args(["-t", "2"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let stdin = stdin_process.stdin.as_mut().unwrap();
+        stdin.write_all(&[0, 48, 48]).unwrap();
+        let stdin_output = stdin_process.wait_with_output().unwrap();
+
+        let expected = "(NUL)0";
+        assert_eq!(&expected.as_bytes(), &stdin_output.stdout);
+    }
+
+    #[test]
+    fn mode_escape() {
+        let program_path = get_program_path();
+
+        let mut stdin_process = Command::new(&program_path)
+            .args(["-m", "escape"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let stdin = stdin_process.stdin.as_mut().unwrap();
+        stdin.write_all(&[0, 48]).unwrap();
+        let stdin_output = stdin_process.wait_with_output().unwrap();
+
+        let expected = "\\x000";
+        assert_eq!(&expected.as_bytes(), &stdin_output.stdout);
+    }
+
+    #[test]
+    fn mode_mnemonic() {
+        let program_path = get_program_path();
+
+        let mut stdin_process = Command::new(&program_path)
+            .args(["-m", "mnemonic"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let stdin = stdin_process.stdin.as_mut().unwrap();
+        stdin.write_all(&[0, 48]).unwrap();
+        let stdin_output = stdin_process.wait_with_output().unwrap();
+
+        let expected = "(NUL)0";
+        assert_eq!(&expected.as_bytes(), &stdin_output.stdout);
+    }
+
+    #[test]
+    fn mode_suppress() {
+        let program_path = get_program_path();
+
+        let mut stdin_process = Command::new(&program_path)
+            .args(["-m", "suppress"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let stdin = stdin_process.stdin.as_mut().unwrap();
+        stdin.write_all(&[0, 48]).unwrap();
+        let stdin_output = stdin_process.wait_with_output().unwrap();
+
+        let expected = "0";
+        assert_eq!(&expected.as_bytes(), &stdin_output.stdout);
     }
 }
