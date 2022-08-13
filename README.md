@@ -1,5 +1,5 @@
 # safe_ascii
-A tool for sanitising ASCII files to printable characters.
+A tool for sanitising files to printable ASCII characters.
 
 Can be used when marking programming projects, where the output may be incorrect and it may be ideal to avoid non-printable characters (e.g. to avoid file being detected as binary when using `grep`).
 
@@ -15,7 +15,8 @@ USAGE:
 
 ARGS:
     <files>...
-
+            A list of files to process.
+            Use '-' for stdin
 
 OPTIONS:
     -h, --help

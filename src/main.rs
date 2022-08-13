@@ -1,4 +1,4 @@
-use clap::{Arg, Command, Values};
+use clap::Parser;
 use safe_ascii::{map_to_escape, map_to_mnemonic, AsciiMapping};
 use std::{
     env,
@@ -6,65 +6,67 @@ use std::{
     io::{self, BufReader, Write},
 };
 
-fn main() -> Result<(), std::io::Error> {
-    let matches = Command::new("safe-ascii")
-        .version("1.1.1")
-        .about("A tool for sanitising ASCII files to printable characters.")
-        .author("Steven Tang <yc@steventang.net>")
-        .arg(
-            Arg::new("mode")
-                .short('m')
-                .long("mode")
-                .value_name("mnemonic|escape|suppress")
-                .possible_values(&["mnemonic", "escape", "suppress"])
-                .long_help(
-                    "mnemonic: abbreviation e.g. (NUL), (SP), (NL)
+#[derive(Parser)]
+#[clap(author, version, about)]
+struct Args {
+    /// Mode
+    #[clap(
+        short = 'm',
+        long = "mode",
+        value_name = "mnemonic|escape|suppress",
+        value_parser,
+        default_value = "mnemonic",
+        takes_value = true,
+        multiple_values = false,
+        possible_values(&["mnemonic", "escape", "suppress"]),
+        long_help = "mnemonic: abbreviation e.g. (NUL), (SP), (NL)
 escape: \\x sequence, e.g. \\x00, \\x20, \\x0a
-suppress: don't print non-printable characters",
-                )
-                .takes_value(true)
-                .multiple_values(false)
-                .default_value("mnemonic"),
-        )
-        .arg(
-            Arg::new("truncate")
-                .short('t')
-                .long("truncate")
-                .value_name("truncate length")
-                .long_help("length (bytes) to truncate at, -1 means no truncation")
-                .takes_value(true)
-                .multiple_values(false)
-                .default_value("-1"),
-        )
-        .arg(
-            Arg::new("exclude")
-                .short('x')
-                .long("exclude")
-                .value_name("exclude characters")
-                .long_help(
-                    "comma-delimited decimal values of characters to print
+suppress: don't print non-printable characters"
+    )]
+    mode: String,
+
+    /// Truncate
+    #[clap(
+        short = 't',
+        long = "truncate",
+        value_name = "truncate length",
+        long_help = "length (bytes) to truncate at, -1 means no truncation",
+        takes_value = true,
+        multiple_values = false,
+        default_value_t = -1
+    )]
+    truncate: i128,
+
+    /// Exclude
+    #[clap(
+        short = 'x',
+        long = "exclude",
+        value_name = "exclude characters",
+        value_delimiter = ',',
+        long_help = "comma-delimited decimal values of characters to print
 (9 is HT (tab), 10 is NL (newline), 13 is CR (carriage return), 32 is SP (space))",
-                )
-                .multiple_values(false)
-                .required(false)
-                .value_delimiter(',')
-                .default_value("10,32"),
-        )
-        .arg(Arg::new("files").multiple_values(true))
-        .get_matches();
+        multiple_values = false,
+        required = false,
+        default_value = "10,32"
+    )]
+    exclude: Vec<String>,
 
-    // Extract command line arguments
-    let mode = matches.value_of("mode").expect("Cannot read mode");
-    let truncate = matches.value_of("truncate").expect("Cannot read truncate");
-    let mut truncate = str::parse::<i128>(truncate).expect("Cannot parse truncate");
-    let exclude = parse_exclude(
-        matches
-            .values_of("exclude")
-            .map(Values::collect)
-            .unwrap_or_default(),
-    );
+    /// Files
+    #[clap(
+        name = "files",
+        multiple_values = true,
+        long_help = "A list of files to process.
+Use '-' for stdin"
+    )]
+    files: Vec<String>,
+}
 
-    let map_fn = match mode {
+fn main() -> Result<(), std::io::Error> {
+    let args = Args::parse();
+    let mut truncate = args.truncate;
+    let exclude = parse_exclude(args.exclude);
+
+    let map_fn = match args.mode.as_str() {
         "mnemonic" => map_to_mnemonic,
         "escape" => map_to_escape,
         _ => |_| "".to_string(),
@@ -72,9 +74,9 @@ suppress: don't print non-printable characters",
     let mapping = AsciiMapping::new(&map_fn, exclude);
 
     // If files are given, then use files; otherwise, use stdin
-    if let Some(values) = matches.values_of("files") {
+    if !args.files.is_empty() {
         // files
-        for filename in values {
+        for filename in &args.files {
             if filename == "-" {
                 try_process_file(io::stdin(), &mapping, &mut truncate)?;
             } else {
@@ -154,12 +156,12 @@ fn process_file<R: io::Read>(
 }
 
 // Parses exclude string
-fn parse_exclude(s: Vec<&str>) -> [bool; 256] {
+fn parse_exclude(s: Vec<String>) -> [bool; 256] {
     // Initialize to false
     let mut exclude: [bool; 256] = [false; 256];
     // Split by comma, parse into int, set index of exclude array
     for i in s {
-        if let Ok(i) = str::parse::<u8>(i) {
+        if let Ok(i) = str::parse::<u8>(&i) {
             exclude[i as usize] = true;
         }
     }
