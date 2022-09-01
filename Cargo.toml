@@ -10,7 +10,7 @@ license = "MIT"
 readme = "README.md"
 
 [dependencies]
-clap = { version = "3.2.17", default-features = false, features=["std", "derive"] }
+clap = { version = "3.2.19", default-features = false, features=["std", "derive"] }
 
 [lib]
 name = "safe_ascii"
