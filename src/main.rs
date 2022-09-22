@@ -7,18 +7,16 @@ use std::{
 };
 
 #[derive(Parser)]
-#[clap(author, version, about)]
+#[command(author, version, about)]
 struct Args {
     /// Mode
-    #[clap(
+    #[arg(
         short = 'm',
         long = "mode",
         value_name = "mnemonic|escape|suppress",
-        value_parser,
         default_value = "mnemonic",
-        takes_value = true,
-        multiple_values = false,
-        possible_values(&["mnemonic", "escape", "suppress"]),
+        num_args(1),
+        value_parser(["mnemonic", "escape", "suppress"]),
         long_help = "mnemonic: abbreviation e.g. (NUL), (SP), (NL)
 escape: \\x sequence, e.g. \\x00, \\x20, \\x0a
 suppress: don't print non-printable characters"
@@ -26,39 +24,44 @@ suppress: don't print non-printable characters"
     mode: String,
 
     /// Truncate
-    #[clap(
+    #[arg(
         short = 't',
         long = "truncate",
         value_name = "truncate length",
         long_help = "length (bytes) to truncate at, -1 means no truncation",
-        takes_value = true,
-        multiple_values = false,
+        num_args(1),
         default_value_t = -1
     )]
     truncate: i128,
 
     /// Exclude
-    #[clap(
+    #[arg(
         short = 'x',
         long = "exclude",
         value_name = "exclude characters",
         value_delimiter = ',',
         long_help = "comma-delimited decimal values of characters to print
 (9 is HT (tab), 10 is NL (newline), 13 is CR (carriage return), 32 is SP (space))",
-        multiple_values = false,
+        num_args(1),
         required = false,
         default_value = "10,32"
     )]
     exclude: Vec<String>,
 
     /// Files
-    #[clap(
-        name = "files",
-        multiple_values = true,
+    #[arg(
+        value_name = "files",
+        num_args(0..),
         long_help = "A list of files to process.
 Use '-' for stdin"
     )]
     files: Vec<String>,
+}
+
+#[test]
+fn verify_cli() {
+    use clap::CommandFactory;
+    Args::command().debug_assert()
 }
 
 fn main() -> Result<(), std::io::Error> {
