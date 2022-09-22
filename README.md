@@ -44,8 +44,7 @@ Options:
 ```
 $ safe-ascii -x 10 Cargo.toml
 [package]
-name(SP)=(SP)"safe_ascii"
+name(SP)=(SP)"safe-ascii"
 version(SP)=(SP)"1.0.0"
-edition(SP)=(SP)"2018"
 ...
 ```
