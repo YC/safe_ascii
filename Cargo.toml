@@ -1,6 +1,6 @@
 [package]
 name = "safe-ascii"
-edition = "2018"
+edition = "2021"
 version = "1.1.2"
 description = "A tool for sanitising files to printable ASCII characters."
 authors = ["Steven Tang <yc@steventang.net>"]
