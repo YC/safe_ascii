@@ -5,34 +5,38 @@ Can be used when marking programming projects, where the output may be incorrect
 
 ## Usage
 ```
-USAGE:
-    safe-ascii [OPTIONS] [files]...
+Usage: safe-ascii [OPTIONS] [files]...
 
-ARGS:
-    <files>...
-            A list of files to process.
-            Use '-' for stdin
+Arguments:
+  [files]...
+          A list of files to process.
+          Use '-' for stdin
 
-OPTIONS:
-    -h, --help
-            Print help information
+Options:
+  -m, --mode <mnemonic|escape|suppress>
+          mnemonic: abbreviation e.g. (NUL), (SP), (NL)
+          escape: \x sequence, e.g. \x00, \x20, \x0a
+          suppress: don't print non-printable characters
 
-    -m, --mode <mnemonic|escape|suppress>
-            mnemonic: abbreviation e.g. (NUL), (SP), (NL)
-            escape: \x sequence, e.g. \x00, \x20, \x0a
-            suppress: don't print non-printable characters[default: mnemonic]
-            [possible values: mnemonic, escape, suppress]
+          [default: mnemonic]
+          [possible values: mnemonic, escape, suppress]
 
-    -t, --truncate <truncate length>
-            length (bytes) to truncate at, -1 means no truncation[default: -1]
+  -t, --truncate <truncate length>
+          length (bytes) to truncate at, -1 means no truncation
 
-    -V, --version
-            Print version information
+          [default: -1]
 
-    -x, --exclude <exclude characters>
-            comma-delimited decimal values of characters to print
-            (9 is HT (tab), 10 is NL (newline), 13 is CR (carriage return), 32 is SP
-            (space))[default: 10,32]
+  -x, --exclude <exclude characters>
+          comma-delimited decimal values of characters to print
+          (9 is HT (tab), 10 is NL (newline), 13 is CR (carriage return), 32 is SP (space))
+
+          [default: 10,32]
+
+  -h, --help
+          Print help information (use `-h` for a summary)
+
+  -V, --version
+          Print version information
 ```
 
 ### Example
