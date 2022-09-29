@@ -15,6 +15,7 @@ clap = { version = "4.0.2", default-features = false, features=["std", "derive",
 [lib]
 name = "safe_ascii"
 crate-type = ["lib"]
+path = "safe_ascii/src/lib.rs"
 
 [[bin]]
 name = "safe-ascii"
