@@ -10,7 +10,7 @@ readme = "README.md"
 edition = "2021"
 
 [dependencies]
-clap = { version = "4.0.18", default-features = false, features=["std", "derive", "help", "usage", "error-context"] }
+clap = { version = "4.0.29", default-features = false, features=["std", "derive", "help", "usage", "error-context"] }
 
 [lib]
 name = "safe_ascii"
