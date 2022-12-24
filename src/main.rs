@@ -99,11 +99,6 @@ fn main() -> Result<(), std::io::Error> {
                     }
                 }
             }
-
-            // Early return if no more chars should be printed
-            if truncate == 0 {
-                break;
-            }
         }
     } else {
         try_process_file(std::io::stdin(), &mapping, &mut truncate)?
@@ -117,6 +112,11 @@ fn try_process_file<R: io::Read>(
     mapping: &AsciiMapping,
     truncate: &mut i128,
 ) -> Result<(), std::io::Error> {
+    // Early return if no more chars should be printed
+    if *truncate == 0 {
+        return Ok(());
+    }
+
     if let Err(e) = process_file(reader, mapping, truncate) {
         if e.kind() == std::io::ErrorKind::BrokenPipe {
             std::process::exit(141);
