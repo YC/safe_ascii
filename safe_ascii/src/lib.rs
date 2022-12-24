@@ -58,18 +58,6 @@ impl AsciiMapping {
     }
 }
 
-#[test]
-fn test_generate_mapping() {
-    // Exclusion list with all but first excluded
-    let mut exclusion_list: [bool; 256] = [true; 256];
-    exclusion_list[1] = false;
-
-    let mapping = AsciiMapping::new(&map_to_mnemonic, exclusion_list);
-    assert_eq!(mapping.mapping[0], "\0");
-    assert_eq!(mapping.mapping[1], "(SOH)");
-    assert_eq!(mapping.mapping[48], "0");
-}
-
 /// Returns a char's mnemonic representation.
 ///
 /// * ASCII characters in range 0x21 to 0x7e are not escaped.
@@ -142,5 +130,17 @@ pub fn map_to_mnemonic(c: u8) -> String {
 /// ```
 // Map to escape sequence form
 pub fn map_to_escape(c: u8) -> String {
-    format!("\\x{:02x}", c)
+    format!("\\x{c:02x}")
+}
+
+#[test]
+fn test_generate_mapping() {
+    // Exclusion list with all but first excluded
+    let mut exclusion_list: [bool; 256] = [true; 256];
+    exclusion_list[1] = false;
+
+    let mapping = AsciiMapping::new(&map_to_mnemonic, exclusion_list);
+    assert_eq!(mapping.mapping[0], "\0");
+    assert_eq!(mapping.mapping[1], "(SOH)");
+    assert_eq!(mapping.mapping[48], "0");
 }

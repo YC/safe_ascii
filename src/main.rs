@@ -66,8 +66,8 @@ fn verify_cli() {
 
 fn main() -> Result<(), std::io::Error> {
     let args = Args::parse();
-    let mut truncate = args.truncate;
     let exclude = parse_exclude(args.exclude);
+    let mut truncate = args.truncate;
 
     let map_fn = match args.mode.as_str() {
         "mnemonic" => map_to_mnemonic,
