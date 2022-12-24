@@ -85,29 +85,39 @@ fn main() -> Result<(), std::io::Error> {
 
     // If files are given, then use files; otherwise, use stdin
     if !args.files.is_empty() {
-        // files
         for filename in &args.files {
+            // Early return if no more chars should be printed
+            if truncate == 0 {
+                return Ok(());
+            }
+
             if filename == "-" {
                 try_process_file(io::stdin(), &mapping, &mut truncate)?;
-            } else {
-                let file = File::open(filename);
-                match file {
-                    Ok(file) => {
-                        let buf_reader = BufReader::new(file);
-                        try_process_file(buf_reader, &mapping, &mut truncate)?
-                    }
-                    Err(err) => {
-                        eprintln!(
-                            "{}: {}: {}",
-                            env::args().next().expect("Cannot obtain executable name"),
-                            filename,
-                            err
-                        );
-                    }
+                continue;
+            }
+
+            let file = File::open(filename);
+            match file {
+                Ok(file) => {
+                    let buf_reader = BufReader::new(file);
+                    try_process_file(buf_reader, &mapping, &mut truncate)?
+                }
+                Err(err) => {
+                    eprintln!(
+                        "{}: {}: {}",
+                        env::args().next().expect("Cannot obtain executable name"),
+                        filename,
+                        err
+                    );
                 }
             }
         }
     } else {
+        // Early return if no more chars should be printed
+        if truncate == 0 {
+            return Ok(());
+        }
+
         try_process_file(std::io::stdin(), &mapping, &mut truncate)?
     }
 
@@ -119,11 +129,6 @@ fn try_process_file<R: io::Read>(
     mapping: &AsciiMapping,
     truncate: &mut i128,
 ) -> Result<(), std::io::Error> {
-    // Early return if no more chars should be printed
-    if *truncate == 0 {
-        return Ok(());
-    }
-
     if let Err(e) = process_file(reader, mapping, truncate) {
         if e.kind() == std::io::ErrorKind::BrokenPipe {
             std::process::exit(141);
@@ -143,25 +148,23 @@ fn process_file<R: io::Read>(
     let mut handle = stdout.lock();
 
     for byte in reader.bytes() {
-        match byte {
-            Ok(c) => {
-                if (33..=126).contains(&c) {
-                    handle.write_all(&[c])?;
-                } else {
-                    handle.write_all(mapping.convert_u8(c).as_bytes())?;
-                }
+        let c = byte?;
 
-                // Reduce truncate
-                if *truncate >= 0 {
-                    *truncate -= 1;
-                    if *truncate == 0 {
-                        break;
-                    }
-                }
+        if (33..=126).contains(&c) {
+            handle.write_all(&[c])?;
+        } else {
+            handle.write_all(mapping.convert_u8(c).as_bytes())?;
+        }
+
+        // Reduce truncate
+        if *truncate >= 0 {
+            *truncate -= 1;
+            if *truncate == 0 {
+                break;
             }
-            _ => break,
         }
     }
+
     Ok(())
 }
 
