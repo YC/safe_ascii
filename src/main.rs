@@ -6,28 +6,35 @@ use std::{
     io::{self, BufReader, Write},
 };
 
+#[derive(clap::ValueEnum, Clone)]
+pub enum Mode {
+    Mnemonic,
+    Escape,
+    Suppress,
+}
+
 #[derive(Parser)]
 #[command(author, version, about)]
 struct Args {
     /// Mode
     #[arg(
+        value_enum,
         short = 'm',
         long = "mode",
         value_name = "mnemonic|escape|suppress",
         default_value = "mnemonic",
         num_args(1),
-        value_parser(["mnemonic", "escape", "suppress"]),
         long_help = "mnemonic: abbreviation e.g. (NUL), (SP), (NL)
 escape: \\x sequence, e.g. \\x00, \\x20, \\x0a
 suppress: don't print non-printable characters"
     )]
-    mode: String,
+    mode: Mode,
 
     /// Truncate
     #[arg(
         short = 't',
         long = "truncate",
-        value_name = "truncate length",
+        value_name = "truncate-length",
         long_help = "length (bytes) to truncate at, -1 means no truncation",
         num_args(1),
         default_value_t = -1
@@ -38,7 +45,7 @@ suppress: don't print non-printable characters"
     #[arg(
         short = 'x',
         long = "exclude",
-        value_name = "exclude characters",
+        value_name = "exclude-characters",
         value_delimiter = ',',
         long_help = "comma-delimited decimal values of characters to print
 (9 is HT (tab), 10 is NL (newline), 13 is CR (carriage return), 32 is SP (space))",
@@ -69,9 +76,9 @@ fn main() -> Result<(), std::io::Error> {
     let exclude = parse_exclude(args.exclude);
     let mut truncate = args.truncate;
 
-    let map_fn = match args.mode.as_str() {
-        "mnemonic" => map_to_mnemonic,
-        "escape" => map_to_escape,
+    let map_fn = match args.mode {
+        Mode::Mnemonic => map_to_mnemonic,
+        Mode::Escape => map_to_escape,
         _ => |_| "".to_string(),
     };
     let mapping = AsciiMapping::new(&map_fn, exclude);

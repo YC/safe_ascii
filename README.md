@@ -21,12 +21,12 @@ Options:
           [default: mnemonic]
           [possible values: mnemonic, escape, suppress]
 
-  -t, --truncate <truncate length>
+  -t, --truncate <truncate-length>
           length (bytes) to truncate at, -1 means no truncation
 
           [default: -1]
 
-  -x, --exclude <exclude characters>
+  -x, --exclude <exclude-characters>
           comma-delimited decimal values of characters to print
           (9 is HT (tab), 10 is NL (newline), 13 is CR (carriage return), 32 is SP (space))
 
