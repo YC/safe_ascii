@@ -19,7 +19,7 @@ impl AsciiMapping {
         let mut result: [String; 256] = [(); 256].map(|_| String::default());
 
         for i in 0u8..=255 {
-            if exclusion_list[i as usize] {
+            if exclusion_list[i as usize] || (33..=126).contains(&i) {
                 result[i as usize] = (i as char).to_string();
             } else {
                 result[i as usize] = map_fn(i);
@@ -47,10 +47,10 @@ impl AsciiMapping {
     /// use safe_ascii::AsciiMapping;
     /// let mut exclude: [bool; 256] = [false; 256];
     /// let mapping = AsciiMapping::new(&safe_ascii::map_to_mnemonic, exclude);
-    /// assert_eq!(mapping.convert_u8_slice(&['h' as u8, ' ' as u8, 'i' as u8]), "h(SP)i");
+    /// assert_eq!(mapping.convert_u8_slice(&['h' as u8, ' ' as u8, 'i' as u8], 3), "h(SP)i");
     /// ```
-    pub fn convert_u8_slice(&self, input: &[u8]) -> String {
-        input
+    pub fn convert_u8_slice(&self, input: &[u8], size: usize) -> String {
+        input[..size]
             .iter()
             .map(|c| self.mapping[*c as usize].as_ref())
             .collect::<Vec<&str>>()

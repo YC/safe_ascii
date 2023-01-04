@@ -1,9 +1,10 @@
 use clap::Parser;
 use safe_ascii::{map_to_escape, map_to_mnemonic, AsciiMapping};
 use std::{
+    cmp::min,
     env,
     fs::File,
-    io::{self, BufReader, Write},
+    io::{self, BufReader, Read, Write},
 };
 
 #[derive(clap::ValueEnum, Clone)]
@@ -92,16 +93,13 @@ fn main() -> Result<(), std::io::Error> {
             }
 
             if filename == "-" {
-                try_process_file(io::stdin(), &mapping, &mut truncate)?;
+                try_process_file(&mut io::stdin(), &mapping, &mut truncate)?;
                 continue;
             }
 
             let file = File::open(filename);
             match file {
-                Ok(file) => {
-                    let buf_reader = BufReader::new(file);
-                    try_process_file(buf_reader, &mapping, &mut truncate)?
-                }
+                Ok(file) => try_process_file(&mut BufReader::new(file), &mapping, &mut truncate)?,
                 Err(err) => {
                     eprintln!(
                         "{}: {}: {}",
@@ -118,14 +116,14 @@ fn main() -> Result<(), std::io::Error> {
             return Ok(());
         }
 
-        try_process_file(std::io::stdin(), &mapping, &mut truncate)?
+        try_process_file(&mut std::io::stdin(), &mapping, &mut truncate)?
     }
 
     Ok(())
 }
 
-fn try_process_file<R: io::Read>(
-    reader: R,
+fn try_process_file<R: Read>(
+    reader: &mut R,
     mapping: &AsciiMapping,
     truncate: &mut i128,
 ) -> Result<(), std::io::Error> {
@@ -139,32 +137,36 @@ fn try_process_file<R: io::Read>(
 }
 
 // Process files with Read trait
-fn process_file<R: io::Read>(
-    reader: R,
+fn process_file<R: Read>(
+    reader: &mut R,
     mapping: &AsciiMapping,
     truncate: &mut i128,
 ) -> Result<(), std::io::Error> {
     let stdout = io::stdout();
     let mut handle = stdout.lock();
 
-    for byte in reader.bytes() {
-        let c = byte?;
+    let mut buf: [u8; 16 * 1024] = [0; 16 * 1024];
 
-        if (33..=126).contains(&c) {
-            handle.write_all(&[c])?;
-        } else {
-            handle.write_all(mapping.convert_u8(c).as_bytes())?;
+    loop {
+        let n = reader.read(&mut buf[..])?;
+        if n == 0 {
+            break; // no more input
         }
 
-        // Reduce truncate
-        if *truncate >= 0 {
-            *truncate -= 1;
-            if *truncate == 0 {
-                break;
-            }
+        if *truncate < 0 {
+            handle.write_all(mapping.convert_u8_slice(&buf, n).as_bytes())?;
+        } else if *truncate <= n as i128 {
+            handle.write_all(
+                mapping
+                    .convert_u8_slice(&buf, min(*truncate as usize, n))
+                    .as_bytes(),
+            )?;
+            *truncate = 0;
+        } else {
+            handle.write_all(mapping.convert_u8_slice(&buf, n).as_bytes())?;
+            *truncate -= n as i128;
         }
     }
-
     Ok(())
 }
 
