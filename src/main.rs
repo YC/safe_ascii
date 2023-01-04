@@ -255,7 +255,7 @@ mod cli {
         let stdin_output = stdin_process.wait_with_output().unwrap();
 
         let expected = "(NUL)0";
-        assert_eq!(&expected.as_bytes(), &stdin_output.stdout);
+        assert_eq!(expected, String::from_utf8(stdin_output.stdout).unwrap());
     }
 
     #[test]
@@ -273,7 +273,7 @@ mod cli {
         let stdin_output = stdin_process.wait_with_output().unwrap();
 
         let expected = "\\x000";
-        assert_eq!(&expected.as_bytes(), &stdin_output.stdout);
+        assert_eq!(expected, String::from_utf8(stdin_output.stdout).unwrap());
     }
 
     #[test]
@@ -291,7 +291,7 @@ mod cli {
         let stdin_output = stdin_process.wait_with_output().unwrap();
 
         let expected = "(NUL)0";
-        assert_eq!(&expected.as_bytes(), &stdin_output.stdout);
+        assert_eq!(expected, String::from_utf8(stdin_output.stdout).unwrap());
     }
 
     #[test]
@@ -309,6 +309,6 @@ mod cli {
         let stdin_output = stdin_process.wait_with_output().unwrap();
 
         let expected = "0";
-        assert_eq!(&expected.as_bytes(), &stdin_output.stdout);
+        assert_eq!(expected, String::from_utf8(stdin_output.stdout).unwrap());
     }
 }
