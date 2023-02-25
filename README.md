@@ -1,7 +1,8 @@
 # safe_ascii
-A tool for sanitising files to printable ASCII characters.
+A tool for sanitising input to printable ASCII characters.
 
-Can be used when marking programming projects, where the output may be incorrect and it may be ideal to avoid non-printable characters (e.g. to avoid file being detected as binary when using `grep`).
+Used for marking programming assignments, where the output may contain
+unexpected binary characters which taint the test execution output.
 
 ## Usage
 ```
