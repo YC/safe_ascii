@@ -11,23 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      - name: Check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-
-      - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-
-      - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+      - run: cargo check
+      - run: cargo build
+      - run: cargo test
