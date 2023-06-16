@@ -1,5 +1,5 @@
 use clap::Parser;
-use safe_ascii::{map_to_escape, map_to_mnemonic, AsciiMapping};
+use safe_ascii::{map_suppress, map_to_escape, map_to_mnemonic, AsciiMapping};
 use std::{
     cmp::min,
     env,
@@ -80,7 +80,7 @@ fn main() -> Result<(), std::io::Error> {
     let map_fn = match args.mode {
         Mode::Mnemonic => map_to_mnemonic,
         Mode::Escape => map_to_escape,
-        _ => |_| "".to_string(),
+        _ => map_suppress,
     };
     let mapping = AsciiMapping::new(&map_fn, exclude);
 
@@ -274,7 +274,7 @@ mod cli {
         stdin.write_all(&[0, 48]).unwrap();
         let stdin_output = stdin_process.wait_with_output().unwrap();
 
-        let expected = "\\x000";
+        let expected = "\\x00\\x30";
         assert_eq!(expected, String::from_utf8(stdin_output.stdout).unwrap());
     }
 

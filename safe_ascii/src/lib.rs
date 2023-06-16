@@ -19,7 +19,7 @@ impl AsciiMapping {
         let mut result: [String; 256] = [(); 256].map(|_| String::default());
 
         for i in 0u8..=255 {
-            if exclusion_list[i as usize] || (33..=126).contains(&i) {
+            if exclusion_list[i as usize] {
                 result[i as usize] = (i as char).to_string();
             } else {
                 result[i as usize] = map_fn(i);
@@ -128,9 +128,31 @@ pub fn map_to_mnemonic(c: u8) -> String {
 /// assert_eq!(safe_ascii::map_to_escape('0' as u8), "\\x30");
 /// assert_eq!(safe_ascii::map_to_escape('~' as u8), "\\x7e");
 /// ```
-// Map to escape sequence form
 pub fn map_to_escape(c: u8) -> String {
     format!("\\x{c:02x}")
+}
+
+/// Suppress non-printable ASCII.
+///
+/// # Examples
+///
+/// ```
+/// use safe_ascii;
+///
+/// assert_eq!(safe_ascii::map_suppress('\0' as u8), "");
+/// assert_eq!(safe_ascii::map_suppress('\t' as u8), "");
+/// assert_eq!(safe_ascii::map_suppress('\n' as u8), "");
+/// assert_eq!(safe_ascii::map_suppress('\r' as u8), "");
+/// assert_eq!(safe_ascii::map_suppress('a' as u8), "a");
+/// assert_eq!(safe_ascii::map_suppress('0' as u8), "0");
+/// assert_eq!(safe_ascii::map_suppress('~' as u8), "~");
+/// ```
+// Map to escape sequence form
+pub fn map_suppress(c: u8) -> String {
+    match c {
+        33..=126 => (c as char).to_string(), // Printable
+        _ => "".to_owned(),
+    }
 }
 
 #[test]
