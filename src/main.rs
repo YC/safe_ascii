@@ -4,7 +4,7 @@ use std::{
     cmp::min,
     env,
     fs::File,
-    io::{self, BufReader, Read, Write},
+    io::{self, BufReader, Read, Write}
 };
 
 #[derive(clap::ValueEnum, Clone)]
@@ -74,8 +74,13 @@ fn verify_cli() {
 
 fn main() -> Result<(), std::io::Error> {
     let args = Args::parse();
-    let exclude = parse_exclude(args.exclude);
-    let mut truncate = args.truncate;
+    let exclude = match parse_exclude(args.exclude) {
+        Ok(exclude) => exclude,
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
+    };
 
     let map_fn = match args.mode {
         Mode::Mnemonic => map_to_mnemonic,
@@ -83,6 +88,8 @@ fn main() -> Result<(), std::io::Error> {
         _ => map_suppress,
     };
     let mapping = AsciiMapping::new(&map_fn, exclude);
+
+    let mut truncate = args.truncate;
 
     // If files are given, then use files; otherwise, use stdin
     if !args.files.is_empty() {
@@ -171,16 +178,18 @@ fn process_file<R: Read>(
 }
 
 // Parses exclude string
-fn parse_exclude(s: Vec<String>) -> [bool; 256] {
+fn parse_exclude(s: Vec<String>) -> Result<[bool; 256], Box<dyn std::error::Error>> {
     // Initialize to false
     let mut exclude: [bool; 256] = [false; 256];
     // Split by comma, parse into int, set index of exclude array
     for i in s {
         if let Ok(i) = str::parse::<u8>(&i) {
             exclude[i as usize] = true;
+        } else {
+            Err(format!("Error: Encountered unparsable value \"{i}\" in exclusion list"))?;
         }
     }
-    exclude
+    Ok(exclude)
 }
 
 #[cfg(test)]
@@ -219,6 +228,8 @@ mod cli {
         stdin.write_all(&file[0..1000]).unwrap();
         let stdin_output = stdin_process.wait_with_output().unwrap();
 
+        assert_eq!(0, file_output.status.code().unwrap());
+        assert_eq!(0, stdin_output.status.code().unwrap());
         assert_eq!(&file_output.stdout, &stdin_output.stdout);
     }
 
@@ -246,71 +257,89 @@ mod cli {
     fn truncation() {
         let program_path = get_program_path();
 
-        let mut stdin_process = Command::new(&program_path)
+        let mut process = Command::new(&program_path)
             .args(["-t", "2"])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()
             .unwrap();
-        let stdin = stdin_process.stdin.as_mut().unwrap();
+        let stdin = process.stdin.as_mut().unwrap();
         stdin.write_all(&[0, 48, 48]).unwrap();
-        let stdin_output = stdin_process.wait_with_output().unwrap();
+        let output = process.wait_with_output().unwrap();
 
         let expected = "(NUL)0";
-        assert_eq!(expected, String::from_utf8(stdin_output.stdout).unwrap());
+        assert_eq!(expected, String::from_utf8(output.stdout).unwrap());
+        assert_eq!(0, output.status.code().unwrap());
     }
 
     #[test]
     fn mode_escape() {
         let program_path = get_program_path();
 
-        let mut stdin_process = Command::new(&program_path)
+        let mut process = Command::new(&program_path)
             .args(["-m", "escape"])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()
             .unwrap();
-        let stdin = stdin_process.stdin.as_mut().unwrap();
+        let stdin = process.stdin.as_mut().unwrap();
         stdin.write_all(&[0, 48]).unwrap();
-        let stdin_output = stdin_process.wait_with_output().unwrap();
+        let output = process.wait_with_output().unwrap();
 
         let expected = "\\x00\\x30";
-        assert_eq!(expected, String::from_utf8(stdin_output.stdout).unwrap());
+        assert_eq!(expected, String::from_utf8(output.stdout).unwrap());
     }
 
     #[test]
     fn mode_mnemonic() {
         let program_path = get_program_path();
 
-        let mut stdin_process = Command::new(&program_path)
+        let mut process = Command::new(&program_path)
             .args(["-m", "mnemonic"])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()
             .unwrap();
-        let stdin = stdin_process.stdin.as_mut().unwrap();
+        let stdin = process.stdin.as_mut().unwrap();
         stdin.write_all(&[0, 48]).unwrap();
-        let stdin_output = stdin_process.wait_with_output().unwrap();
+        let output = process.wait_with_output().unwrap();
 
         let expected = "(NUL)0";
-        assert_eq!(expected, String::from_utf8(stdin_output.stdout).unwrap());
+        assert_eq!(expected, String::from_utf8(output.stdout).unwrap());
     }
 
     #[test]
     fn mode_suppress() {
         let program_path = get_program_path();
 
-        let mut stdin_process = Command::new(&program_path)
+        let mut process = Command::new(&program_path)
             .args(["-m", "suppress"])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()
             .unwrap();
-        let stdin = stdin_process.stdin.as_mut().unwrap();
+        let stdin = process.stdin.as_mut().unwrap();
         stdin.write_all(&[0, 48]).unwrap();
-        let stdin_output = stdin_process.wait_with_output().unwrap();
+        let output = process.wait_with_output().unwrap();
 
         let expected = "0";
-        assert_eq!(expected, String::from_utf8(stdin_output.stdout).unwrap());
+        assert_eq!(expected, String::from_utf8(output.stdout).unwrap());
+    }
+
+    #[test]
+    fn bad_suppression_list() {
+        let program_path = get_program_path();
+
+        let process = Command::new(&program_path)
+            .args(["-x", "whatever"])
+            .output()
+            .unwrap();
+
+        assert_eq!("", String::from_utf8(process.stdout).unwrap());
+        assert_eq!(
+            "Error: Encountered unparsable value \"whatever\" in exclusion list\n",
+            String::from_utf8(process.stderr).unwrap()
+        );
+        assert_eq!(1, process.status.code().unwrap());
     }
 }
