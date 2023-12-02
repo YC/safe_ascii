@@ -1,14 +1,14 @@
 use clap::Parser;
+use core::cmp::min;
 use safe_ascii::{map_suppress, map_to_escape, map_to_mnemonic, AsciiMapping};
 use std::{
-    cmp::min,
     env,
     fs::File,
-    io::{self, BufReader, Read, Write}
+    io::{self, BufReader, Read, Write},
 };
 
 #[derive(clap::ValueEnum, Clone)]
-pub enum Mode {
+enum Mode {
     Mnemonic,
     Escape,
     Suppress,
@@ -135,7 +135,7 @@ fn try_process_file<R: Read>(
     truncate: &mut i128,
 ) -> Result<(), std::io::Error> {
     if let Err(e) = process_file(reader, mapping, truncate) {
-        if e.kind() == std::io::ErrorKind::BrokenPipe {
+        if e.kind() == io::ErrorKind::BrokenPipe {
             std::process::exit(141);
         }
         Err(e)?
@@ -186,7 +186,9 @@ fn parse_exclude(s: Vec<String>) -> Result<[bool; 256], Box<dyn std::error::Erro
         if let Ok(i) = str::parse::<u8>(&i) {
             exclude[i as usize] = true;
         } else {
-            Err(format!("Error: Encountered unparsable value \"{i}\" in exclusion list"))?;
+            Err(format!(
+                "Error: Encountered unparsable value \"{i}\" in exclusion list"
+            ))?;
         }
     }
     Ok(exclude)
