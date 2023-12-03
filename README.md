@@ -11,33 +11,29 @@ Usage: safe-ascii [OPTIONS] [files]...
 Arguments:
   [files]...
           A list of files to process.
-          Use '-' for stdin
+          Use '-' for stdin.
 
 Options:
   -m, --mode <mnemonic|escape|suppress>
-          mnemonic: abbreviation e.g. (NUL), (SP), (NL)
-          escape: \x sequence, e.g. \x00, \x20, \x0a
-          suppress: don't print non-printable characters
+          Mode of character conversion/suppression.
 
           [default: mnemonic]
-          [possible values: mnemonic, escape, suppress]
+
+          Possible values:
+          - mnemonic: Abbreviation, e.g. (NUL), (SP), (NL)
+          - escape:   Hex sequence, e.g. \x00, \x20, \x0a
+          - suppress: Suppress non-printable characters
 
   -t, --truncate <truncate-length>
-          length (bytes) to truncate at, -1 means no truncation
+          Length (bytes) to truncate at, -1 represents no truncation.
 
           [default: -1]
 
   -x, --exclude <exclude-characters>
-          comma-delimited decimal values of characters to print
+          Comma-delimited decimal values of characters to print.
           (9 is HT (tab), 10 is NL (newline), 13 is CR (carriage return), 32 is SP (space))
 
           [default: 10,32]
-
-  -h, --help
-          Print help information (use `-h` for a summary)
-
-  -V, --version
-          Print version information
 ```
 
 ### Example
