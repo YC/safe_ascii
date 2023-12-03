@@ -1,8 +1,10 @@
+#![warn(clippy::pedantic)]
 #![crate_name = "safe_ascii"]
 
 /// Type for storing precomputed mapping between u8 to String.
 /// (Subject to change)
 pub struct AsciiMapping {
+    /// Mapping for each of the 256 possible u8 values.
     mapping: [String; 256],
 }
 
@@ -14,9 +16,10 @@ impl AsciiMapping {
     /// let mut exclude: [bool; 256] = [false; 256];
     /// let _ = AsciiMapping::new(&safe_ascii::map_to_mnemonic, exclude);
     /// ```
+    #[must_use]
     pub fn new(map_fn: &dyn Fn(u8) -> String, exclusion_list: [bool; 256]) -> Self {
         // https://stackoverflow.com/questions/28656387
-        let mut result: [String; 256] = [(); 256].map(|_| String::default());
+        let mut result: [String; 256] = [(); 256].map(|()| String::default());
 
         for i in 0u8..=255 {
             if exclusion_list[i as usize] {
@@ -26,7 +29,7 @@ impl AsciiMapping {
             }
         }
 
-        AsciiMapping { mapping: result }
+        Self { mapping: result }
     }
 
     /// Convert a u8 according to the mapping.
@@ -37,6 +40,7 @@ impl AsciiMapping {
     /// let mapping = AsciiMapping::new(&safe_ascii::map_to_mnemonic, exclude);
     /// assert_eq!(mapping.convert_u8(0), "(NUL)");
     /// ```
+    #[must_use]
     pub fn convert_u8(&self, input: u8) -> &str {
         &self.mapping[input as usize]
     }
@@ -49,6 +53,7 @@ impl AsciiMapping {
     /// let mapping = AsciiMapping::new(&safe_ascii::map_to_mnemonic, exclude);
     /// assert_eq!(mapping.convert_u8_slice(&['h' as u8, ' ' as u8, 'i' as u8], 3), "h(SP)i");
     /// ```
+    #[must_use]
     pub fn convert_u8_slice(&self, input: &[u8], size: usize) -> String {
         input[..size]
             .iter()
@@ -73,6 +78,7 @@ impl AsciiMapping {
 /// assert_eq!(safe_ascii::map_to_mnemonic('a' as u8), "a");
 /// assert_eq!(safe_ascii::map_to_mnemonic('~' as u8), "~");
 /// ```
+#[must_use]
 pub fn map_to_mnemonic(c: u8) -> String {
     match c {
         0 => "(NUL)".to_owned(),
@@ -128,6 +134,7 @@ pub fn map_to_mnemonic(c: u8) -> String {
 /// assert_eq!(safe_ascii::map_to_escape('0' as u8), "\\x30");
 /// assert_eq!(safe_ascii::map_to_escape('~' as u8), "\\x7e");
 /// ```
+#[must_use]
 pub fn map_to_escape(c: u8) -> String {
     format!("\\x{c:02x}")
 }
@@ -148,10 +155,11 @@ pub fn map_to_escape(c: u8) -> String {
 /// assert_eq!(safe_ascii::map_suppress('~' as u8), "~");
 /// ```
 // Map to escape sequence form
+#[must_use]
 pub fn map_suppress(c: u8) -> String {
     match c {
         33..=126 => (c as char).to_string(), // Printable
-        _ => "".to_owned(),
+        _ => String::new(),
     }
 }
 

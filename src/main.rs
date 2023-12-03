@@ -1,19 +1,26 @@
+#![warn(clippy::pedantic)]
+
 use clap::Parser;
-use core::cmp::min;
 use safe_ascii::{map_suppress, map_to_escape, map_to_mnemonic, AsciiMapping};
 use std::{
-    env,
+    env, error,
     fs::File,
     io::{self, BufReader, Read, Write},
+    process,
 };
 
+/// Mode of conversion/suppression.
 #[derive(clap::ValueEnum, Clone)]
 enum Mode {
+    /// Mnemonic representation, e.g. (NUL) for '\0'
     Mnemonic,
+    /// Hex escape sequence, e.g. \x00 for '\0'
     Escape,
+    /// Suppress non-printable
     Suppress,
 }
 
+/// CLI Definition for clap
 #[derive(Parser)]
 #[command(author, version, about)]
 struct Args {
@@ -66,33 +73,34 @@ Use '-' for stdin"
     files: Vec<String>,
 }
 
-#[test]
-fn verify_cli() {
-    use clap::CommandFactory;
-    Args::command().debug_assert()
-}
-
-fn main() -> Result<(), std::io::Error> {
+fn main() -> Result<(), io::Error> {
     let args = Args::parse();
     let exclude = match parse_exclude(args.exclude) {
         Ok(exclude) => exclude,
         Err(e) => {
-            eprintln!("{}", e);
-            std::process::exit(1);
+            eprintln!("{e}");
+            process::exit(1);
         }
     };
 
     let map_fn = match args.mode {
         Mode::Mnemonic => map_to_mnemonic,
         Mode::Escape => map_to_escape,
-        _ => map_suppress,
+        Mode::Suppress => map_suppress,
     };
     let mapping = AsciiMapping::new(&map_fn, exclude);
 
     let mut truncate = args.truncate;
 
     // If files are given, then use files; otherwise, use stdin
-    if !args.files.is_empty() {
+    if args.files.is_empty() {
+        // Early return if no more chars should be printed
+        if truncate == 0 {
+            return Ok(());
+        }
+
+        try_process(&mut io::stdin(), &mapping, &mut truncate)?;
+    } else {
         for filename in &args.files {
             // Early return if no more chars should be printed
             if truncate == 0 {
@@ -100,13 +108,13 @@ fn main() -> Result<(), std::io::Error> {
             }
 
             if filename == "-" {
-                try_process_file(&mut io::stdin(), &mapping, &mut truncate)?;
+                try_process(&mut io::stdin(), &mapping, &mut truncate)?;
                 continue;
             }
 
             let file = File::open(filename);
             match file {
-                Ok(file) => try_process_file(&mut BufReader::new(file), &mapping, &mut truncate)?,
+                Ok(file) => try_process(&mut BufReader::new(file), &mapping, &mut truncate)?,
                 Err(err) => {
                     eprintln!(
                         "{}: {}: {}",
@@ -117,38 +125,32 @@ fn main() -> Result<(), std::io::Error> {
                 }
             }
         }
-    } else {
-        // Early return if no more chars should be printed
-        if truncate == 0 {
-            return Ok(());
-        }
-
-        try_process_file(&mut std::io::stdin(), &mapping, &mut truncate)?
     }
 
     Ok(())
 }
 
-fn try_process_file<R: Read>(
+/// Wrapper for process function, to handle SIGPIPE.
+fn try_process<R: Read>(
     reader: &mut R,
     mapping: &AsciiMapping,
     truncate: &mut i128,
-) -> Result<(), std::io::Error> {
-    if let Err(e) = process_file(reader, mapping, truncate) {
+) -> Result<(), io::Error> {
+    if let Err(e) = process(reader, mapping, truncate) {
         if e.kind() == io::ErrorKind::BrokenPipe {
             std::process::exit(141);
         }
-        Err(e)?
+        Err(e)?;
     };
     Ok(())
 }
 
-// Process files with Read trait
-fn process_file<R: Read>(
+/// Read from input reader, perform conversion, and write to stdout.
+fn process<R: Read>(
     reader: &mut R,
     mapping: &AsciiMapping,
     truncate: &mut i128,
-) -> Result<(), std::io::Error> {
+) -> Result<(), io::Error> {
     let stdout = io::stdout();
     let mut handle = stdout.lock();
 
@@ -161,37 +163,49 @@ fn process_file<R: Read>(
         }
 
         if *truncate < 0 {
+            // No truncate limit
             handle.write_all(mapping.convert_u8_slice(&buf, n).as_bytes())?;
-        } else if *truncate <= n as i128 {
+            continue;
+        } else if *truncate >= n as i128 {
+            // Won't reach limit in this block
+            handle.write_all(mapping.convert_u8_slice(&buf, n).as_bytes())?;
+            *truncate -= n as i128;
+        } else {
+            // Will reach limit within this block
+            #[allow(clippy::cast_sign_loss)]
             handle.write_all(
                 mapping
-                    .convert_u8_slice(&buf, min(*truncate as usize, n))
+                    .convert_u8_slice(&buf, *truncate as usize)
                     .as_bytes(),
             )?;
             *truncate = 0;
-        } else {
-            handle.write_all(mapping.convert_u8_slice(&buf, n).as_bytes())?;
-            *truncate -= n as i128;
         }
     }
     Ok(())
 }
 
-// Parses exclude string
-fn parse_exclude(s: Vec<String>) -> Result<[bool; 256], Box<dyn std::error::Error>> {
+/// Parses exclude string
+fn parse_exclude(exclusions: Vec<String>) -> Result<[bool; 256], Box<dyn error::Error>> {
     // Initialize to false
     let mut exclude: [bool; 256] = [false; 256];
+
     // Split by comma, parse into int, set index of exclude array
-    for i in s {
-        if let Ok(i) = str::parse::<u8>(&i) {
+    for exclusion in exclusions {
+        if let Ok(i) = str::parse::<u8>(&exclusion) {
             exclude[i as usize] = true;
         } else {
             Err(format!(
-                "Error: Encountered unparsable value \"{i}\" in exclusion list"
+                "Error: Encountered unparsable value \"{exclusion}\" in exclusion list"
             ))?;
         }
     }
     Ok(exclude)
+}
+
+#[test]
+fn verify_cli() {
+    use clap::CommandFactory;
+    Args::command().debug_assert()
 }
 
 #[cfg(test)]
