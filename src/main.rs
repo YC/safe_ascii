@@ -12,11 +12,11 @@ use std::{
 /// Mode of conversion/suppression.
 #[derive(clap::ValueEnum, Clone)]
 enum Mode {
-    /// Mnemonic representation, e.g. (NUL) for '\0'
+    /// Abbreviation, e.g. (NUL), (SP), (NL)
     Mnemonic,
-    /// Hex escape sequence, e.g. \x00 for '\0'
+    /// Hex sequence, e.g. \x00, \x20, \x0a
     Escape,
-    /// Suppress non-printable
+    /// Suppress non-printable characters
     Suppress,
 }
 
@@ -32,9 +32,7 @@ struct Args {
         value_name = "mnemonic|escape|suppress",
         default_value = "mnemonic",
         num_args(1),
-        long_help = "mnemonic: abbreviation e.g. (NUL), (SP), (NL)
-escape: \\x sequence, e.g. \\x00, \\x20, \\x0a
-suppress: don't print non-printable characters"
+        long_help = "Mode of character conversion/suppression."
     )]
     mode: Mode,
 
@@ -43,7 +41,7 @@ suppress: don't print non-printable characters"
         short = 't',
         long = "truncate",
         value_name = "truncate-length",
-        long_help = "length (bytes) to truncate at, -1 means no truncation",
+        long_help = "Length (bytes) to truncate at, -1 represents no truncation.",
         num_args(1),
         default_value_t = -1
     )]
@@ -55,7 +53,7 @@ suppress: don't print non-printable characters"
         long = "exclude",
         value_name = "exclude-characters",
         value_delimiter = ',',
-        long_help = "comma-delimited decimal values of characters to print
+        long_help = "Comma-delimited decimal values of characters to print.
 (9 is HT (tab), 10 is NL (newline), 13 is CR (carriage return), 32 is SP (space))",
         num_args(1),
         required = false,
@@ -68,7 +66,7 @@ suppress: don't print non-printable characters"
         value_name = "files",
         num_args(0..),
         long_help = "A list of files to process.
-Use '-' for stdin"
+Use '-' for stdin."
     )]
     files: Vec<String>,
 }
