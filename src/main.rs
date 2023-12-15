@@ -120,6 +120,7 @@ fn main() -> Result<(), io::Error> {
                         filename,
                         err
                     );
+                    std::process::exit(1);
                 }
             }
         }
@@ -354,6 +355,20 @@ mod cli {
             "Error: Encountered unparsable value \"whatever\" in exclusion list\n",
             String::from_utf8(process.stderr).unwrap()
         );
+        assert_eq!(1, process.status.code().unwrap());
+    }
+
+    #[test]
+    fn non_existent_file() {
+        let program_path = get_program_path();
+
+        let process = Command::new(&program_path)
+            .args(["non-exist.file"])
+            .output()
+            .unwrap();
+
+        assert_eq!("", String::from_utf8(process.stdout).unwrap());
+        assert!(String::from_utf8(process.stderr).unwrap().contains("non-exist.file: No such file or directory"));
         assert_eq!(1, process.status.code().unwrap());
     }
 }
