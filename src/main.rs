@@ -53,7 +53,7 @@ struct Args {
         long = "exclude",
         value_name = "exclude-characters",
         value_delimiter = ',',
-        long_help = "Comma-delimited decimal values of characters to print.
+        long_help = "Comma-delimited decimal values of non-printable characters to print (empty string for none).
 (9 is HT (tab), 10 is NL (newline), 13 is CR (carriage return), 32 is SP (space))",
         num_args(1),
         required = false,
@@ -187,6 +187,11 @@ fn process<R: Read>(
 fn parse_exclude(exclusions: Vec<String>) -> Result<[bool; 256], Box<dyn error::Error>> {
     // Initialize to false
     let mut exclude: [bool; 256] = [false; 256];
+
+    // Don't print any non-printable characters
+    if exclusions.len() == 1 && exclusions.first().unwrap() == "" {
+        return Ok(exclude);
+    }
 
     // Split by comma, parse into int, set index of exclude array
     for exclusion in exclusions {
@@ -368,7 +373,27 @@ mod cli {
             .unwrap();
 
         assert_eq!("", String::from_utf8(process.stdout).unwrap());
-        assert!(String::from_utf8(process.stderr).unwrap().contains("non-exist.file: No such file or directory"));
+        assert!(String::from_utf8(process.stderr)
+            .unwrap()
+            .contains("non-exist.file: No such file or directory"));
         assert_eq!(1, process.status.code().unwrap());
+    }
+
+    #[test]
+    fn empty_exclusion() {
+        let program_path = get_program_path();
+
+        let mut process = Command::new(&program_path)
+            .args(["-x", ""])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let stdin = process.stdin.as_mut().unwrap();
+        stdin.write_all(&[0, 10, 32, 48]).unwrap();
+        let output = process.wait_with_output().unwrap();
+
+        let expected = "(NUL)(LF)(SP)0";
+        assert_eq!(expected, String::from_utf8(output.stdout).unwrap());
     }
 }
