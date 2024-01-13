@@ -164,7 +164,6 @@ fn process<R: Read>(
         if *truncate < 0 {
             // No truncate limit
             handle.write_all(mapping.convert_u8_slice(&buf, n).as_bytes())?;
-            continue;
         } else if *truncate >= n as i128 {
             // Won't reach limit in this block
             handle.write_all(mapping.convert_u8_slice(&buf, n).as_bytes())?;
@@ -179,6 +178,7 @@ fn process<R: Read>(
             )?;
             *truncate = 0;
         }
+        handle.flush()?;
     }
     Ok(())
 }
