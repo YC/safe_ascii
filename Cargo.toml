@@ -1,6 +1,6 @@
 [package]
 name = "safe-ascii"
-version = "1.2.0"
+version = "1.3.1"
 description = "A tool for sanitising input to printable ASCII characters."
 authors = ["Steven Tang <yc@steventang.net>"]
 homepage = "https://github.com/YC/safe_ascii"
