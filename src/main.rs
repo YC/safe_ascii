@@ -1,7 +1,7 @@
 #![warn(clippy::pedantic)]
 
 use clap::Parser;
-use safe_ascii::{map_suppress, map_to_escape, map_to_mnemonic, AsciiMapping};
+use safe_ascii::{AsciiMapping, map_suppress, map_to_escape, map_to_mnemonic};
 use std::{
     env, error,
     fs::File,
@@ -373,9 +373,11 @@ mod cli {
             .unwrap();
 
         assert_eq!("", String::from_utf8(process.stdout).unwrap());
-        assert!(String::from_utf8(process.stderr)
-            .unwrap()
-            .contains("non-exist.file: No such file or directory"));
+        assert!(
+            String::from_utf8(process.stderr)
+                .unwrap()
+                .contains("non-exist.file: No such file or directory")
+        );
         assert_eq!(1, process.status.code().unwrap());
     }
 
