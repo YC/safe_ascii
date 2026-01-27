@@ -140,7 +140,7 @@ fn try_process<R: Read>(
             std::process::exit(141);
         }
         Err(e)?;
-    };
+    }
     Ok(())
 }
 
