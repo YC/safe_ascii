@@ -90,7 +90,7 @@ fn main() -> Result<(), io::Error> {
 
     let mut truncate = args.truncate;
 
-    // If files are given, then use files; otherwise, use stdin
+    // Use stdin if no files are specified
     if args.files.is_empty() {
         // Early return if no more chars should be printed
         if truncate == 0 {
@@ -98,30 +98,30 @@ fn main() -> Result<(), io::Error> {
         }
 
         try_process(&mut io::stdin(), &mapping, &mut truncate)?;
-    } else {
-        for filename in &args.files {
-            // Early return if no more chars should be printed
-            if truncate == 0 {
-                return Ok(());
-            }
+    }
 
-            if filename == "-" {
-                try_process(&mut io::stdin(), &mapping, &mut truncate)?;
-                continue;
-            }
+    for filename in &args.files {
+        // Early return if no more chars should be printed, to avoid opening further files
+        if truncate == 0 {
+            return Ok(());
+        }
 
-            let file = File::open(filename);
-            match file {
-                Ok(file) => try_process(&mut BufReader::new(file), &mapping, &mut truncate)?,
-                Err(err) => {
-                    eprintln!(
-                        "{}: {}: {}",
-                        env::args().next().expect("Cannot obtain executable name"),
-                        filename,
-                        err
-                    );
-                    std::process::exit(1);
-                }
+        if filename == "-" {
+            try_process(&mut io::stdin(), &mapping, &mut truncate)?;
+            continue;
+        }
+
+        let file = File::open(filename);
+        match file {
+            Ok(file) => try_process(&mut BufReader::new(file), &mapping, &mut truncate)?,
+            Err(err) => {
+                eprintln!(
+                    "{}: {}: {}",
+                    env::args().next().expect("Cannot obtain executable name"),
+                    filename,
+                    err
+                );
+                std::process::exit(1);
             }
         }
     }
