@@ -18,7 +18,6 @@ impl AsciiMapping {
     /// ```
     #[must_use]
     pub fn new(map_fn: &dyn Fn(u8) -> String, exclusion_list: [bool; 256]) -> Self {
-        // https://stackoverflow.com/questions/28656387
         let mut result: [String; 256] = [(); 256].map(|()| String::default());
 
         for i in 0u8..=255 {
@@ -32,7 +31,7 @@ impl AsciiMapping {
         Self { mapping: result }
     }
 
-    /// Convert a u8 according to the mapping.
+    /// Convert a `u8` according to the mapping.
     ///
     /// ```
     /// use safe_ascii::AsciiMapping;
@@ -45,7 +44,7 @@ impl AsciiMapping {
         &self.mapping[input as usize]
     }
 
-    /// Convert a u8 according to the mapping.
+    /// Convert up to `size` bytes of a `u8` slice according to the mapping.
     ///
     /// ```
     /// use safe_ascii::AsciiMapping;
@@ -77,6 +76,7 @@ impl AsciiMapping {
 /// assert_eq!(safe_ascii::map_to_mnemonic('\r' as u8), "(CR)");
 /// assert_eq!(safe_ascii::map_to_mnemonic('a' as u8), "a");
 /// assert_eq!(safe_ascii::map_to_mnemonic('~' as u8), "~");
+/// assert_eq!(safe_ascii::map_to_mnemonic(255), "(>7F)");
 /// ```
 #[must_use]
 pub fn map_to_mnemonic(c: u8) -> String {
@@ -133,6 +133,7 @@ pub fn map_to_mnemonic(c: u8) -> String {
 /// assert_eq!(safe_ascii::map_to_escape('\r' as u8), "\\x0d");
 /// assert_eq!(safe_ascii::map_to_escape('0' as u8), "\\x30");
 /// assert_eq!(safe_ascii::map_to_escape('~' as u8), "\\x7e");
+/// assert_eq!(safe_ascii::map_to_escape(255), "\\xff");
 /// ```
 #[must_use]
 pub fn map_to_escape(c: u8) -> String {
@@ -173,4 +174,5 @@ fn test_generate_mapping() {
     assert_eq!(mapping.mapping[0], "\0");
     assert_eq!(mapping.mapping[1], "(SOH)");
     assert_eq!(mapping.mapping[48], "0");
+    assert_eq!(mapping.mapping[255], (255 as u8 as char).to_string());
 }
