@@ -190,7 +190,7 @@ fn parse_exclude(exclusions: Vec<String>) -> Result<[bool; 256], Box<dyn error::
     let mut exclude: [bool; 256] = [false; 256];
 
     // Don't print any non-printable characters
-    if exclusions.len() == 1 && exclusions.first().unwrap() == "" {
+    if let [s] = exclusions.as_slice() && s.is_empty() {
         return Ok(exclude);
     }
 
@@ -397,6 +397,25 @@ mod cli {
         let output = process.wait_with_output().unwrap();
 
         let expected = "(NUL)(LF)(SP)0";
+        assert_eq!(expected, String::from_utf8(output.stdout).unwrap());
+    }
+
+    #[test]
+    fn single_exclusion() {
+        let program_path = get_program_path();
+
+        let mut process = Command::new(&program_path)
+            .args(["-x", "10"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let stdin = process.stdin.as_mut().unwrap();
+        stdin.write_all(&[0, 10, 32, 48]).unwrap();
+        let output = process.wait_with_output().unwrap();
+
+        // Only newline (10) is excluded from conversion
+        let expected = "(NUL)\n(SP)0";
         assert_eq!(expected, String::from_utf8(output.stdout).unwrap());
     }
 
