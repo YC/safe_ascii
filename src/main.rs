@@ -12,7 +12,7 @@ use std::{
 /// Mode of conversion/suppression.
 #[derive(clap::ValueEnum, Clone)]
 enum Mode {
-    /// Abbreviation, e.g. (NUL), (SP), (NL)
+    /// Abbreviation, e.g. (NUL), (SP), (LF)
     Mnemonic,
     /// Hex sequence, e.g. \x00, \x20, \x0a
     Escape,
