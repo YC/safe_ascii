@@ -216,13 +216,26 @@ fn verify_cli() {
 #[cfg(test)]
 mod cli {
     use std::io::Write;
-    use std::process::{Command, Stdio};
+    use std::process::{Command, Output, Stdio};
 
     fn get_program_path() -> String {
         // Adapted from cargo-script
         let target_dir =
             std::env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| String::from("target"));
         format!("{}/debug/safe-ascii", target_dir)
+    }
+
+    fn run_with_input(args: &[&str], input: &[u8]) -> Output {
+        let program_path = get_program_path();
+        let mut process = Command::new(&program_path)
+            .args(args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        process.stdin.as_mut().unwrap().write_all(input).unwrap();
+        process.wait_with_output().unwrap()
     }
 
     // Compares output of stdin and file inputs
@@ -276,184 +289,84 @@ mod cli {
 
     #[test]
     fn truncation() {
-        let program_path = get_program_path();
-
-        let mut process = Command::new(&program_path)
-            .args(["-t", "2"])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .spawn()
-            .unwrap();
-        let stdin = process.stdin.as_mut().unwrap();
-        stdin.write_all(&[0, 48, 48]).unwrap();
-        let output = process.wait_with_output().unwrap();
-
-        let expected = "(NUL)0";
-        assert_eq!(expected, String::from_utf8(output.stdout).unwrap());
+        let output = run_with_input(&["-t", "2"], &[0, 48, 48]);
         assert_eq!(0, output.status.code().unwrap());
+        assert_eq!("(NUL)0", String::from_utf8(output.stdout).unwrap());
     }
 
     #[test]
     fn mode_escape() {
-        let program_path = get_program_path();
-
-        let mut process = Command::new(&program_path)
-            .args(["-m", "escape"])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .spawn()
-            .unwrap();
-        let stdin = process.stdin.as_mut().unwrap();
-        stdin.write_all(&[0, 48]).unwrap();
-        let output = process.wait_with_output().unwrap();
-
-        let expected = "\\x00\\x30";
-        assert_eq!(expected, String::from_utf8(output.stdout).unwrap());
+        let output = run_with_input(&["-m", "escape"], &[0, 48]);
+        assert_eq!(0, output.status.code().unwrap());
+        assert_eq!("\\x00\\x30", String::from_utf8(output.stdout).unwrap());
     }
 
     #[test]
     fn mode_mnemonic() {
-        let program_path = get_program_path();
-
-        let mut process = Command::new(&program_path)
-            .args(["-m", "mnemonic"])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .spawn()
-            .unwrap();
-        let stdin = process.stdin.as_mut().unwrap();
-        stdin.write_all(&[0, 48]).unwrap();
-        let output = process.wait_with_output().unwrap();
-
-        let expected = "(NUL)0";
-        assert_eq!(expected, String::from_utf8(output.stdout).unwrap());
+        let output = run_with_input(&["-m", "mnemonic"], &[0, 48]);
+        assert_eq!(0, output.status.code().unwrap());
+        assert_eq!("(NUL)0", String::from_utf8(output.stdout).unwrap());
     }
 
     #[test]
     fn mode_suppress() {
-        let program_path = get_program_path();
-
-        let mut process = Command::new(&program_path)
-            .args(["-m", "suppress"])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .spawn()
-            .unwrap();
-        let stdin = process.stdin.as_mut().unwrap();
-        stdin.write_all(&[0, 48]).unwrap();
-        let output = process.wait_with_output().unwrap();
-
-        let expected = "0";
-        assert_eq!(expected, String::from_utf8(output.stdout).unwrap());
+        let output = run_with_input(&["-m", "suppress"], &[0, 48]);
+        assert_eq!(0, output.status.code().unwrap());
+        assert_eq!("0", String::from_utf8(output.stdout).unwrap());
     }
 
     #[test]
     fn bad_suppression_list() {
-        let program_path = get_program_path();
+        let output = run_with_input(&["-x", "whatever"], &[]);
 
-        let process = Command::new(&program_path)
-            .args(["-x", "whatever"])
-            .output()
-            .unwrap();
-
-        assert_eq!("", String::from_utf8(process.stdout).unwrap());
+        assert_eq!(1, output.status.code().unwrap());
+        assert_eq!("", String::from_utf8(output.stdout).unwrap());
         assert_eq!(
             "Error: Encountered unparsable value \"whatever\" in exclusion list\n",
-            String::from_utf8(process.stderr).unwrap()
+            String::from_utf8(output.stderr).unwrap()
         );
-        assert_eq!(1, process.status.code().unwrap());
     }
 
     #[test]
     fn non_existent_file() {
-        let program_path = get_program_path();
+        let output = run_with_input(&["non-exist.file"], &[]);
 
-        let process = Command::new(&program_path)
-            .args(["non-exist.file"])
-            .output()
-            .unwrap();
-
-        assert_eq!("", String::from_utf8(process.stdout).unwrap());
+        assert_eq!(1, output.status.code().unwrap());
+        assert_eq!("", String::from_utf8(output.stdout).unwrap());
         assert!(
-            String::from_utf8(process.stderr)
+            String::from_utf8(output.stderr)
                 .unwrap()
                 .contains("non-exist.file: No such file or directory")
         );
-        assert_eq!(1, process.status.code().unwrap());
     }
 
     #[test]
     fn empty_exclusion() {
-        let program_path = get_program_path();
-
-        let mut process = Command::new(&program_path)
-            .args(["-x", ""])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .spawn()
-            .unwrap();
-        let stdin = process.stdin.as_mut().unwrap();
-        stdin.write_all(&[0, 10, 32, 48]).unwrap();
-        let output = process.wait_with_output().unwrap();
-
-        let expected = "(NUL)(LF)(SP)0";
-        assert_eq!(expected, String::from_utf8(output.stdout).unwrap());
+        let output = run_with_input(&["-x", ""], &[0, 10, 32, 48]);
+        assert_eq!(0, output.status.code().unwrap());
+        assert_eq!("(NUL)(LF)(SP)0", String::from_utf8(output.stdout).unwrap());
     }
 
     #[test]
     fn single_exclusion() {
-        let program_path = get_program_path();
-
-        let mut process = Command::new(&program_path)
-            .args(["-x", "10"])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .spawn()
-            .unwrap();
-        let stdin = process.stdin.as_mut().unwrap();
-        stdin.write_all(&[0, 10, 32, 48]).unwrap();
-        let output = process.wait_with_output().unwrap();
-
         // Only newline (10) is excluded from conversion
-        let expected = "(NUL)\n(SP)0";
-        assert_eq!(expected, String::from_utf8(output.stdout).unwrap());
+        let output = run_with_input(&["-x", "10"], &[0, 10, 32, 48]);
+        assert_eq!(0, output.status.code().unwrap());
+        assert_eq!("(NUL)\n(SP)0", String::from_utf8(output.stdout).unwrap());
     }
 
     #[test]
     fn truncation_spans_buffer_boundary() {
-        let program_path = get_program_path();
-
         // Buffer size is 16KB (16384 bytes), truncate in the middle of second buffer
-        let mut process = Command::new(&program_path)
-            .args(["-t", "17000", "-m", "escape"])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .spawn()
-            .unwrap();
-
-        let stdin = process.stdin.as_mut().unwrap();
-        stdin.write_all(&[b'A'; 20000]).unwrap();
-        let output = process.wait_with_output().unwrap();
-
+        let output = run_with_input(&["-t", "17000", "-m", "escape"], &[b'A'; 20000]);
+        assert_eq!(0, output.status.code().unwrap());
         // Each byte becomes \xNN (4 chars)
         assert_eq!(output.stdout.len(), 17000 * 4);
-        assert_eq!(0, output.status.code().unwrap());
     }
 
     #[test]
     fn empty_input() {
-        let program_path = get_program_path();
-
-        let mut process = Command::new(&program_path)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .spawn()
-            .unwrap();
-
-        let stdin = process.stdin.as_mut().unwrap();
-        stdin.write_all(&[]).unwrap();
-        let output = process.wait_with_output().unwrap();
-
+        let output = run_with_input(&[], &[]);
         assert_eq!(0, output.status.code().unwrap());
         assert!(output.stdout.is_empty());
     }
