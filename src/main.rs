@@ -399,4 +399,43 @@ mod cli {
         let expected = "(NUL)(LF)(SP)0";
         assert_eq!(expected, String::from_utf8(output.stdout).unwrap());
     }
+
+    #[test]
+    fn truncation_spans_buffer_boundary() {
+        let program_path = get_program_path();
+
+        // Buffer size is 16KB (16384 bytes), truncate in the middle of second buffer
+        let mut process = Command::new(&program_path)
+            .args(["-t", "17000", "-m", "escape"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+
+        let stdin = process.stdin.as_mut().unwrap();
+        stdin.write_all(&[b'A'; 20000]).unwrap();
+        let output = process.wait_with_output().unwrap();
+
+        // Each byte becomes \xNN (4 chars)
+        assert_eq!(output.stdout.len(), 17000 * 4);
+        assert_eq!(0, output.status.code().unwrap());
+    }
+
+    #[test]
+    fn empty_input() {
+        let program_path = get_program_path();
+
+        let mut process = Command::new(&program_path)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+
+        let stdin = process.stdin.as_mut().unwrap();
+        stdin.write_all(&[]).unwrap();
+        let output = process.wait_with_output().unwrap();
+
+        assert_eq!(0, output.status.code().unwrap());
+        assert!(output.stdout.is_empty());
+    }
 }
