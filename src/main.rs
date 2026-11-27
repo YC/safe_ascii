@@ -1,5 +1,8 @@
 #![warn(clippy::pedantic)]
 
+mod block_converter;
+
+use block_converter::BlockConverter;
 use clap::Parser;
 use safe_ascii::{AsciiMapping, map_suppress, map_to_escape, map_to_mnemonic};
 use std::{
@@ -8,6 +11,8 @@ use std::{
     io::{self, BufReader, Read, Write},
     process,
 };
+
+const BLOCK_SIZE: usize = 16 * 1024;
 
 /// Mode of conversion/suppression.
 #[derive(clap::ValueEnum, Clone)]
@@ -153,7 +158,8 @@ fn process<R: Read>(
     let stdout = io::stdout();
     let mut handle = stdout.lock();
 
-    let mut buf: [u8; 16 * 1024] = [0; 16 * 1024];
+    let mut buf: [u8; BLOCK_SIZE] = [0; BLOCK_SIZE];
+    let mut converter = BlockConverter::new(BLOCK_SIZE, mapping);
 
     loop {
         let n = reader.read(&mut buf[..])?;
@@ -163,19 +169,15 @@ fn process<R: Read>(
 
         if *truncate < 0 {
             // No truncate limit
-            handle.write_all(mapping.convert_u8_slice(&buf, n).as_bytes())?;
+            handle.write_all(converter.convert(&buf[..n]))?;
         } else if *truncate > n as i128 {
             // Won't reach limit in this block
-            handle.write_all(mapping.convert_u8_slice(&buf, n).as_bytes())?;
+            handle.write_all(converter.convert(&buf[..n]))?;
             *truncate -= n as i128;
         } else {
             // Will reach limit within this block
             #[allow(clippy::cast_sign_loss)]
-            handle.write_all(
-                mapping
-                    .convert_u8_slice(&buf, *truncate as usize)
-                    .as_bytes(),
-            )?;
+            handle.write_all(converter.convert(&buf[..*truncate as usize]))?;
             *truncate = 0;
             break;
         }
@@ -190,7 +192,9 @@ fn parse_exclude(exclusions: Vec<String>) -> Result<[bool; 256], Box<dyn error::
     let mut exclude: [bool; 256] = [false; 256];
 
     // Don't print any non-printable characters
-    if let [s] = exclusions.as_slice() && s.is_empty() {
+    if let [s] = exclusions.as_slice()
+        && s.is_empty()
+    {
         return Ok(exclude);
     }
 
